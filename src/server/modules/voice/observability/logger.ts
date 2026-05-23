@@ -1,4 +1,4 @@
-import type { TenantScope } from '../runtime/tenantScope.js';
+import type { TenantScope } from '../runtime/liveRuntimeTenantContext.js';
 
 export type VoiceLogLevel = 'debug' | 'info' | 'warn' | 'error';
 
