@@ -116,7 +116,9 @@ export function createVoiceRuntime(input: {
         speaker: 'caller',
         text: transcript.text,
         isFinal: transcript.isFinal,
-        confidence: transcript.confidence,
+        ...(transcript.confidence !== undefined
+          ? { confidence: transcript.confidence }
+          : {}),
       });
       await persistence.conversations.appendTurn({
         sessionId: session.id,
