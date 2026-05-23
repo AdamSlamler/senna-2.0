@@ -43,9 +43,9 @@ export async function resolveVoiceRuntimeConfig(input: {
     ? normalizePhoneNumber(input.phoneNumber)
     : undefined;
   const business = await input.repository.findBusiness({
-    tenantId: input.tenantId,
-    businessId: input.businessId,
-    phoneNumber,
+    ...(input.tenantId ? { tenantId: input.tenantId } : {}),
+    ...(input.businessId ? { businessId: input.businessId } : {}),
+    ...(phoneNumber ? { phoneNumber } : {}),
   });
 
   if (!business) {
@@ -66,12 +66,14 @@ export async function resolveVoiceRuntimeConfig(input: {
   const location = await input.repository.findLocation({
     tenantId: business.tenantId,
     businessId: business.businessId,
-    locationId: input.locationId,
-    phoneNumber,
-    city: input.city,
-    zipCode: input.zipCode,
     defaultLocationId: business.defaultLocationId,
-    fallbackLocationId: business.routing?.fallbackLocationId,
+    ...(input.locationId ? { locationId: input.locationId } : {}),
+    ...(phoneNumber ? { phoneNumber } : {}),
+    ...(input.city ? { city: input.city } : {}),
+    ...(input.zipCode ? { zipCode: input.zipCode } : {}),
+    ...(business.routing?.fallbackLocationId
+      ? { fallbackLocationId: business.routing.fallbackLocationId }
+      : {}),
   });
   if (!location) {
     throw new VoiceConfigError(
@@ -95,6 +97,18 @@ export async function resolveVoiceRuntimeConfig(input: {
     ...business.runtimeLimits,
     ...location.runtimeLimits,
   };
+  const emergencyTransferNumber =
+    location.emergencyRouting?.transferNumber ??
+    business.emergencyRouting?.transferNumber;
+  const emergencyInstructions =
+    location.emergencyRouting?.instructions ??
+    business.emergencyRouting?.instructions;
+  const afterHoursMessage =
+    location.afterHoursBehavior?.message ??
+    business.afterHoursBehavior?.message;
+  const afterHoursTransferNumber =
+    location.afterHoursBehavior?.transferNumber ??
+    business.afterHoursBehavior?.transferNumber;
 
   return {
     tenantId: business.tenantId,
@@ -134,24 +148,20 @@ export async function resolveVoiceRuntimeConfig(input: {
         location.emergencyRouting?.enabled ??
         business.emergencyRouting?.enabled ??
         featureFlags.emergencyRoutingEnabled,
-      transferNumber:
-        location.emergencyRouting?.transferNumber ??
-        business.emergencyRouting?.transferNumber,
-      instructions:
-        location.emergencyRouting?.instructions ??
-        business.emergencyRouting?.instructions,
+      ...(emergencyTransferNumber
+        ? { transferNumber: emergencyTransferNumber }
+        : {}),
+      ...(emergencyInstructions ? { instructions: emergencyInstructions } : {}),
     },
     afterHoursBehavior: {
       mode:
         location.afterHoursBehavior?.mode ??
         business.afterHoursBehavior?.mode ??
         'answer',
-      message:
-        location.afterHoursBehavior?.message ??
-        business.afterHoursBehavior?.message,
-      transferNumber:
-        location.afterHoursBehavior?.transferNumber ??
-        business.afterHoursBehavior?.transferNumber,
+      ...(afterHoursMessage ? { message: afterHoursMessage } : {}),
+      ...(afterHoursTransferNumber
+        ? { transferNumber: afterHoursTransferNumber }
+        : {}),
     },
   };
 }
