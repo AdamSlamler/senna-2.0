@@ -1,0 +1,4219 @@
+From 17da050fcd44e383921b4232c0af910286686bc4 Mon Sep 17 00:00:00 2001
+From: Dajon Hopkins <Dajon12346@gmail.com>
+Date: Fri, 22 May 2026 16:33:11 -0700
+Subject: [PATCH] Add Senna 2.0 voice system scaffold
+
+---
+ README.md                                     |  15 ++
+ package.json                                  |  23 +++
+ src/server.ts                                 |   8 +
+ src/server/app.ts                             |  15 ++
+ src/server/modules/voice/README.md            |  20 ++
+ .../modules/voice/VOICE_ARCHITECTURE.md       |  94 +++++++++
+ src/server/modules/voice/audio/README.md      |   3 +
+ .../voice/audio/audioChunkProcessor.ts        |   1 +
+ .../audio/realtimeAssistantSpeechState.ts     |   1 +
+ .../voice/audio/realtimeTtsChunkBuffer.ts     |   1 +
+ .../voice/audio/realtimeTtsPlaybackQueue.ts   |   1 +
+ .../voice/audio/realtimeTtsStreamManager.ts   |   1 +
+ src/server/modules/voice/business/README.md   |   3 +
+ .../business/businessKnowledgeService.ts      |   1 +
+ .../business/realtimeBusinessKnowledge.ts     |   1 +
+ .../voice/business/realtimeFaqKnowledge.ts    |   1 +
+ .../voice/business/realtimePolicyKnowledge.ts |   1 +
+ .../business/realtimePricingKnowledge.ts      |   1 +
+ .../business/realtimeServiceAreaKnowledge.ts  |   1 +
+ .../config/businessVoiceConfigResolver.ts     |  90 +++++++++
+ .../config/locationVoiceConfigResolver.ts     |   5 +
+ .../config/memoryVoiceConfigRepository.ts     | 169 ++++++++++++++++
+ .../config/providerVoiceConfigResolver.ts     | 137 +++++++++++++
+ .../voice/config/runtimeVoiceLimits.ts        |   5 +
+ .../voice/config/tenantVoiceConfigResolver.ts | 157 +++++++++++++++
+ .../tests/tenantVoiceConfigResolver.test.ts   | 170 ++++++++++++++++
+ .../modules/voice/config/voiceFeatureFlags.ts |   5 +
+ .../modules/voice/conversation/README.md      |   3 +
+ .../duplexConversationCoordinator.ts          |   1 +
+ .../conversation/interruptionCoordinator.ts   |   1 +
+ .../conversation/realtimeBargeInController.ts |   1 +
+ .../conversation/realtimeConversationLocks.ts |   1 +
+ .../conversation/realtimeTurnDetector.ts      |   1 +
+ .../voice/conversation/speechTurnManager.ts   |   1 +
+ .../modules/voice/distributed/README.md       |   3 +
+ .../distributed/distributedEventQueue.ts      |   1 +
+ .../distributed/distributedFailoverRouter.ts  |   1 +
+ .../distributed/distributedLatencyMonitor.ts  |   1 +
+ .../distributed/distributedRegionRegistry.ts  |   1 +
+ .../distributedRetryOrchestrator.ts           |   1 +
+ .../distributedRuntimeCoordinator.ts          |   1 +
+ .../distributedSessionStateSync.ts            |   1 +
+ src/server/modules/voice/events/README.md     |   3 +
+ .../modules/voice/events/runtimeEventBus.ts   |   1 +
+ .../voice/events/runtimeEventPublisher.ts     |   1 +
+ .../voice/events/runtimeEventRouter.ts        |   1 +
+ .../voice/events/runtimeEventSubscriber.ts    |   1 +
+ .../modules/voice/events/runtimeEventTypes.ts |   1 +
+ .../voice/integrations/crm/crmProvider.ts     |  44 +++++
+ .../integrations/crm/goHighLevelAdapter.ts    |   4 +
+ .../integrations/crm/housecallProAdapter.ts   |   4 +
+ .../voice/integrations/crm/hubspotAdapter.ts  |   4 +
+ .../voice/integrations/crm/jobberAdapter.ts   |   4 +
+ .../home_services/homeServicesProvider.ts     |  13 ++
+ .../homeServicesWorkflowCapabilities.ts       |   7 +
+ .../homeServicesWorkflowCapabilities.test.ts  |  14 ++
+ .../voice/integrations/integrationRegistry.ts |  85 ++++++++
+ .../voice/integrations/integrationRouter.ts   |  38 ++++
+ .../integrations/medical/medicalProvider.ts   |  13 ++
+ .../medical/medicalWorkflowCapabilities.ts    |   7 +
+ .../tests/medicalWorkflowCapabilities.test.ts |  14 ++
+ .../integrations/restaurants/cloverAdapter.ts |   7 +
+ .../restaurants/openTableAdapter.ts           |   7 +
+ .../restaurantReservationProvider.ts          |  47 +++++
+ .../restaurants/sevenRoomsAdapter.ts          |   7 +
+ .../integrations/restaurants/squareAdapter.ts |   7 +
+ .../restaurantReservationProvider.test.ts     |  16 ++
+ .../integrations/restaurants/toastAdapter.ts  |   7 +
+ .../integrations/salons/salonProvider.ts      |  12 ++
+ .../salons/salonWorkflowCapabilities.ts       |   6 +
+ .../tests/salonWorkflowCapabilities.test.ts   |  13 ++
+ .../tests/integrationRouter.test.ts           |  78 ++++++++
+ src/server/modules/voice/llm/README.md        |   3 +
+ .../voice/llm/conversationSummarizer.ts       |   1 +
+ .../modules/voice/llm/openAiToolReasoner.ts   |   1 +
+ src/server/modules/voice/llm/promptBuilder.ts |   1 +
+ .../modules/voice/llm/voiceReasoningEngine.ts |   1 +
+ .../modules/voice/metrics/latencyMetrics.ts   |   1 +
+ .../voice/metrics/voiceMetricsCollector.ts    |   1 +
+ .../voice/metrics/voiceUsageMetrics.ts        |   1 +
+ .../voice/observability/errorReporter.ts      |   1 +
+ .../voice/observability/latencyReporter.ts    |   1 +
+ .../modules/voice/observability/logger.ts     |  22 +++
+ .../observability/providerHealthReporter.ts   |   1 +
+ .../voice/observability/traceContext.ts       |   1 +
+ .../modules/voice/orchestrator/README.md      |   3 +
+ .../orchestrator/liveVoiceOrchestrator.ts     |   1 +
+ .../adapters/memory/memoryAnalyticsStore.ts   |   1 +
+ .../memory/memoryBusinessKnowledgeStore.ts    |   1 +
+ .../memory/memoryConversationStore.ts         |   1 +
+ .../adapters/memory/memoryLeadStore.ts        |   1 +
+ .../memory/memoryPersistenceAdapter.ts        | 132 +++++++++++++
+ .../adapters/memory/memoryTranscriptStore.ts  |   1 +
+ .../adapters/persistenceAdapter.ts            | 147 ++++++++++++++
+ .../adapters/redis/redisCallMappingStore.ts   |   1 +
+ .../adapters/redis/redisEventQueue.ts         |   1 +
+ .../adapters/redis/redisLockStore.ts          |   1 +
+ .../adapters/redis/redisSessionStateStore.ts  |   1 +
+ .../adapters/redis/redisStreamMappingStore.ts |   1 +
+ .../supabase/supabaseAnalyticsStore.ts        |   1 +
+ .../supabaseBusinessKnowledgeStore.ts         |   1 +
+ .../supabase/supabaseCallStateStore.ts        |   1 +
+ .../supabase/supabaseConversationStore.ts     |   1 +
+ .../adapters/supabase/supabaseLeadStore.ts    |   1 +
+ .../supabase/supabasePersistenceAdapter.ts    |   1 +
+ .../supabase/supabaseProviderConfigStore.ts   |   1 +
+ .../supabase/supabaseTranscriptStore.ts       |   1 +
+ .../persistence/realtimeAnalyticsStore.ts     |   2 +
+ .../persistence/realtimeCallStateStore.ts     |   5 +
+ .../persistence/realtimeConversationStore.ts  |   2 +
+ .../voice/persistence/realtimeLeadStore.ts    |   2 +
+ .../persistence/realtimeTranscriptStore.ts    |   2 +
+ .../providers/cartesia/cartesiaClient.ts      |   1 +
+ .../providers/cartesia/cartesiaTtsProvider.ts |   1 +
+ .../providers/deepgram/deepgramClient.ts      |   1 +
+ .../deepgram/deepgramConnectionManager.ts     |   1 +
+ .../providers/deepgram/deepgramErrorMapper.ts |   1 +
+ .../deepgram/deepgramRealtimeSocket.ts        |   1 +
+ .../deepgram/deepgramRuntimeBridge.ts         |   1 +
+ .../deepgram/deepgramTranscriptParser.ts      |   1 +
+ .../providers/elevenlabs/elevenLabsClient.ts  |   1 +
+ .../elevenlabs/elevenLabsTtsProvider.ts       |   1 +
+ .../voice/providers/openai/openAiClient.ts    |   1 +
+ .../providers/openai/openAiErrorMapper.ts     |   1 +
+ .../providers/openai/openAiResponseAdapter.ts |   1 +
+ .../realtime/openAiRealtimeConversation.ts    |   1 +
+ .../realtime/openAiRealtimeFailoverManager.ts |   1 +
+ .../realtime/openAiRealtimeHeartbeat.ts       |   1 +
+ .../realtime/openAiRealtimeRecoveryManager.ts |   1 +
+ .../realtime/openAiRealtimeSessionManager.ts  |   1 +
+ .../modules/voice/providers/providerConfig.ts |  79 ++++++++
+ .../modules/voice/providers/providerErrors.ts |  11 ++
+ .../modules/voice/providers/providerHealth.ts |   7 +
+ .../signalwire/signalWireCallRouter.ts        |   1 +
+ .../signalWireInboundMediaBridge.ts           |   1 +
+ .../signalWireOutboundAudioBridge.ts          |   1 +
+ .../signalwire/signalWireOutboundChunker.ts   |   1 +
+ .../signalwire/signalWireOutboundQueue.ts     |   1 +
+ .../signalwire/signalWirePlaybackState.ts     |   1 +
+ .../signalwire/signalWireWebhookVerifier.ts   |   1 +
+ src/server/modules/voice/reasoning/README.md  |   3 +
+ .../runtime/liveConversationRuntimeState.ts   |   1 +
+ .../runtime/liveRuntimeAnalyticsPipeline.ts   |   1 +
+ .../runtime/liveRuntimeConcurrencyGuard.ts    |  42 ++++
+ .../runtime/liveRuntimeConversationLogger.ts  |   1 +
+ .../voice/runtime/liveRuntimeLeadCapture.ts   |   1 +
+ .../runtime/liveRuntimePersistencePipeline.ts |   1 +
+ .../voice/runtime/liveRuntimePipeline.ts      | 185 ++++++++++++++++++
+ .../runtime/liveRuntimeRecoveryManager.ts     |   1 +
+ .../liveRuntimeSessionHealthMonitor.ts        |   1 +
+ .../runtime/liveRuntimeSessionRegistry.ts     |   1 +
+ .../voice/runtime/liveRuntimeSessionRouter.ts |   1 +
+ .../voice/runtime/liveRuntimeTenantContext.ts |  22 +++
+ .../tests/liveRuntimeConcurrencyGuard.test.ts |  82 ++++++++
+ .../runtime/tests/liveRuntimePipeline.test.ts |  55 ++++++
+ .../runtime/tests/mockRuntimeProviders.ts     |  68 +++++++
+ .../modules/voice/security/abuseDetection.ts  |   1 +
+ .../modules/voice/security/auditLogger.ts     |   1 +
+ .../modules/voice/security/piiRedaction.ts    |   1 +
+ .../modules/voice/security/rateLimiter.ts     |   1 +
+ .../voice/security/tenantIsolationGuard.ts    |   1 +
+ .../security/webhookSignatureVerifier.ts      |  13 ++
+ .../voice/security/websocketAuthGuard.ts      |   1 +
+ src/server/modules/voice/tools/README.md      |   3 +
+ .../modules/voice/tools/tools/bookingTool.ts  |   1 +
+ .../modules/voice/tools/tools/leadTool.ts     |   1 +
+ .../modules/voice/tools/tools/pricingTool.ts  |   1 +
+ .../voice/tools/tools/serviceAreaTool.ts      |   1 +
+ .../modules/voice/tools/tools/smsTool.ts      |   1 +
+ .../modules/voice/tools/tools/transferTool.ts |   1 +
+ .../modules/voice/tools/voiceToolRegistry.ts  |   1 +
+ .../modules/voice/tools/voiceToolRuntime.ts   |   1 +
+ .../modules/voice/transport/liveCallBridge.ts | 115 +++++++++++
+ .../voice/transport/mediaStreamRouter.ts      |   1 +
+ .../transport/signalWireRealtimeSocket.ts     |   1 +
+ .../transport/websocketConnectionManager.ts   |   1 +
+ src/server/modules/voice/tts/README.md        |   3 +
+ .../modules/voice/tts/ttsChunkNormalizer.ts   |   1 +
+ .../modules/voice/tts/ttsFailoverManager.ts   |   1 +
+ src/server/modules/voice/tts/ttsProvider.ts   |   1 +
+ src/server/modules/voice/tts/ttsRouter.ts     |   1 +
+ src/server/modules/voice/widget/README.md     |   3 +
+ .../widget/widgetConversationPipeline.ts      |   1 +
+ .../voice/widget/widgetInstallConfig.ts       |   1 +
+ .../modules/voice/widget/widgetLeadCapture.ts |   1 +
+ .../modules/voice/widget/widgetPricingFlow.ts |   1 +
+ .../modules/voice/widget/widgetRuntime.ts     |   1 +
+ .../voice/widget/widgetServiceAreaFlow.ts     |   1 +
+ src/server/modules/voice/workers/README.md    |   3 +
+ .../modules/voice/workers/analyticsWorker.ts  |   1 +
+ .../modules/voice/workers/failoverWorker.ts   |   1 +
+ .../voice/workers/leadCaptureWorker.ts        |   1 +
+ .../voice/workers/notificationWorker.ts       |   1 +
+ .../modules/voice/workers/queueProcessor.ts   |   1 +
+ .../modules/voice/workers/reasoningWorker.ts  |   1 +
+ .../modules/voice/workers/retryWorker.ts      |   1 +
+ .../modules/voice/workers/summaryWorker.ts    |   1 +
+ .../modules/voice/workers/transcriptWorker.ts |   1 +
+ .../realtimeAbandonedLeadWorkflow.ts          |   1 +
+ .../workflows/realtimeAfterHoursWorkflow.ts   |   1 +
+ .../workflows/realtimeBookingWorkflow.ts      |   1 +
+ .../workflows/realtimeEmergencyWorkflow.ts    |   1 +
+ .../realtimeHumanTransferWorkflow.ts          |   1 +
+ .../workflows/realtimeLeadCaptureWorkflow.ts  |   1 +
+ .../workflows/realtimePricingWorkflow.ts      |   1 +
+ .../workflows/realtimeSupportWorkflow.ts      |   1 +
+ tsconfig.json                                 |  15 ++
+ 207 files changed, 2552 insertions(+)
+ create mode 100644 README.md
+ create mode 100644 package.json
+ create mode 100644 src/server.ts
+ create mode 100644 src/server/app.ts
+ create mode 100644 src/server/modules/voice/README.md
+ create mode 100644 src/server/modules/voice/VOICE_ARCHITECTURE.md
+ create mode 100644 src/server/modules/voice/audio/README.md
+ create mode 100644 src/server/modules/voice/audio/audioChunkProcessor.ts
+ create mode 100644 src/server/modules/voice/audio/realtimeAssistantSpeechState.ts
+ create mode 100644 src/server/modules/voice/audio/realtimeTtsChunkBuffer.ts
+ create mode 100644 src/server/modules/voice/audio/realtimeTtsPlaybackQueue.ts
+ create mode 100644 src/server/modules/voice/audio/realtimeTtsStreamManager.ts
+ create mode 100644 src/server/modules/voice/business/README.md
+ create mode 100644 src/server/modules/voice/business/businessKnowledgeService.ts
+ create mode 100644 src/server/modules/voice/business/realtimeBusinessKnowledge.ts
+ create mode 100644 src/server/modules/voice/business/realtimeFaqKnowledge.ts
+ create mode 100644 src/server/modules/voice/business/realtimePolicyKnowledge.ts
+ create mode 100644 src/server/modules/voice/business/realtimePricingKnowledge.ts
+ create mode 100644 src/server/modules/voice/business/realtimeServiceAreaKnowledge.ts
+ create mode 100644 src/server/modules/voice/config/businessVoiceConfigResolver.ts
+ create mode 100644 src/server/modules/voice/config/locationVoiceConfigResolver.ts
+ create mode 100644 src/server/modules/voice/config/memoryVoiceConfigRepository.ts
+ create mode 100644 src/server/modules/voice/config/providerVoiceConfigResolver.ts
+ create mode 100644 src/server/modules/voice/config/runtimeVoiceLimits.ts
+ create mode 100644 src/server/modules/voice/config/tenantVoiceConfigResolver.ts
+ create mode 100644 src/server/modules/voice/config/tests/tenantVoiceConfigResolver.test.ts
+ create mode 100644 src/server/modules/voice/config/voiceFeatureFlags.ts
+ create mode 100644 src/server/modules/voice/conversation/README.md
+ create mode 100644 src/server/modules/voice/conversation/duplexConversationCoordinator.ts
+ create mode 100644 src/server/modules/voice/conversation/interruptionCoordinator.ts
+ create mode 100644 src/server/modules/voice/conversation/realtimeBargeInController.ts
+ create mode 100644 src/server/modules/voice/conversation/realtimeConversationLocks.ts
+ create mode 100644 src/server/modules/voice/conversation/realtimeTurnDetector.ts
+ create mode 100644 src/server/modules/voice/conversation/speechTurnManager.ts
+ create mode 100644 src/server/modules/voice/distributed/README.md
+ create mode 100644 src/server/modules/voice/distributed/distributedEventQueue.ts
+ create mode 100644 src/server/modules/voice/distributed/distributedFailoverRouter.ts
+ create mode 100644 src/server/modules/voice/distributed/distributedLatencyMonitor.ts
+ create mode 100644 src/server/modules/voice/distributed/distributedRegionRegistry.ts
+ create mode 100644 src/server/modules/voice/distributed/distributedRetryOrchestrator.ts
+ create mode 100644 src/server/modules/voice/distributed/distributedRuntimeCoordinator.ts
+ create mode 100644 src/server/modules/voice/distributed/distributedSessionStateSync.ts
+ create mode 100644 src/server/modules/voice/events/README.md
+ create mode 100644 src/server/modules/voice/events/runtimeEventBus.ts
+ create mode 100644 src/server/modules/voice/events/runtimeEventPublisher.ts
+ create mode 100644 src/server/modules/voice/events/runtimeEventRouter.ts
+ create mode 100644 src/server/modules/voice/events/runtimeEventSubscriber.ts
+ create mode 100644 src/server/modules/voice/events/runtimeEventTypes.ts
+ create mode 100644 src/server/modules/voice/integrations/crm/crmProvider.ts
+ create mode 100644 src/server/modules/voice/integrations/crm/goHighLevelAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/crm/housecallProAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/crm/hubspotAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/crm/jobberAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/home_services/homeServicesProvider.ts
+ create mode 100644 src/server/modules/voice/integrations/home_services/homeServicesWorkflowCapabilities.ts
+ create mode 100644 src/server/modules/voice/integrations/home_services/tests/homeServicesWorkflowCapabilities.test.ts
+ create mode 100644 src/server/modules/voice/integrations/integrationRegistry.ts
+ create mode 100644 src/server/modules/voice/integrations/integrationRouter.ts
+ create mode 100644 src/server/modules/voice/integrations/medical/medicalProvider.ts
+ create mode 100644 src/server/modules/voice/integrations/medical/medicalWorkflowCapabilities.ts
+ create mode 100644 src/server/modules/voice/integrations/medical/tests/medicalWorkflowCapabilities.test.ts
+ create mode 100644 src/server/modules/voice/integrations/restaurants/cloverAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/restaurants/openTableAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/restaurants/restaurantReservationProvider.ts
+ create mode 100644 src/server/modules/voice/integrations/restaurants/sevenRoomsAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/restaurants/squareAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/restaurants/tests/restaurantReservationProvider.test.ts
+ create mode 100644 src/server/modules/voice/integrations/restaurants/toastAdapter.ts
+ create mode 100644 src/server/modules/voice/integrations/salons/salonProvider.ts
+ create mode 100644 src/server/modules/voice/integrations/salons/salonWorkflowCapabilities.ts
+ create mode 100644 src/server/modules/voice/integrations/salons/tests/salonWorkflowCapabilities.test.ts
+ create mode 100644 src/server/modules/voice/integrations/tests/integrationRouter.test.ts
+ create mode 100644 src/server/modules/voice/llm/README.md
+ create mode 100644 src/server/modules/voice/llm/conversationSummarizer.ts
+ create mode 100644 src/server/modules/voice/llm/openAiToolReasoner.ts
+ create mode 100644 src/server/modules/voice/llm/promptBuilder.ts
+ create mode 100644 src/server/modules/voice/llm/voiceReasoningEngine.ts
+ create mode 100644 src/server/modules/voice/metrics/latencyMetrics.ts
+ create mode 100644 src/server/modules/voice/metrics/voiceMetricsCollector.ts
+ create mode 100644 src/server/modules/voice/metrics/voiceUsageMetrics.ts
+ create mode 100644 src/server/modules/voice/observability/errorReporter.ts
+ create mode 100644 src/server/modules/voice/observability/latencyReporter.ts
+ create mode 100644 src/server/modules/voice/observability/logger.ts
+ create mode 100644 src/server/modules/voice/observability/providerHealthReporter.ts
+ create mode 100644 src/server/modules/voice/observability/traceContext.ts
+ create mode 100644 src/server/modules/voice/orchestrator/README.md
+ create mode 100644 src/server/modules/voice/orchestrator/liveVoiceOrchestrator.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/memory/memoryAnalyticsStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/memory/memoryBusinessKnowledgeStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/memory/memoryConversationStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/memory/memoryLeadStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/memory/memoryPersistenceAdapter.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/memory/memoryTranscriptStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/persistenceAdapter.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/redis/redisCallMappingStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/redis/redisEventQueue.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/redis/redisLockStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/redis/redisSessionStateStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/redis/redisStreamMappingStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabaseAnalyticsStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabaseBusinessKnowledgeStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabaseCallStateStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabaseConversationStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabaseLeadStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabasePersistenceAdapter.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabaseProviderConfigStore.ts
+ create mode 100644 src/server/modules/voice/persistence/adapters/supabase/supabaseTranscriptStore.ts
+ create mode 100644 src/server/modules/voice/persistence/realtimeAnalyticsStore.ts
+ create mode 100644 src/server/modules/voice/persistence/realtimeCallStateStore.ts
+ create mode 100644 src/server/modules/voice/persistence/realtimeConversationStore.ts
+ create mode 100644 src/server/modules/voice/persistence/realtimeLeadStore.ts
+ create mode 100644 src/server/modules/voice/persistence/realtimeTranscriptStore.ts
+ create mode 100644 src/server/modules/voice/providers/cartesia/cartesiaClient.ts
+ create mode 100644 src/server/modules/voice/providers/cartesia/cartesiaTtsProvider.ts
+ create mode 100644 src/server/modules/voice/providers/deepgram/deepgramClient.ts
+ create mode 100644 src/server/modules/voice/providers/deepgram/deepgramConnectionManager.ts
+ create mode 100644 src/server/modules/voice/providers/deepgram/deepgramErrorMapper.ts
+ create mode 100644 src/server/modules/voice/providers/deepgram/deepgramRealtimeSocket.ts
+ create mode 100644 src/server/modules/voice/providers/deepgram/deepgramRuntimeBridge.ts
+ create mode 100644 src/server/modules/voice/providers/deepgram/deepgramTranscriptParser.ts
+ create mode 100644 src/server/modules/voice/providers/elevenlabs/elevenLabsClient.ts
+ create mode 100644 src/server/modules/voice/providers/elevenlabs/elevenLabsTtsProvider.ts
+ create mode 100644 src/server/modules/voice/providers/openai/openAiClient.ts
+ create mode 100644 src/server/modules/voice/providers/openai/openAiErrorMapper.ts
+ create mode 100644 src/server/modules/voice/providers/openai/openAiResponseAdapter.ts
+ create mode 100644 src/server/modules/voice/providers/openai/realtime/openAiRealtimeConversation.ts
+ create mode 100644 src/server/modules/voice/providers/openai/realtime/openAiRealtimeFailoverManager.ts
+ create mode 100644 src/server/modules/voice/providers/openai/realtime/openAiRealtimeHeartbeat.ts
+ create mode 100644 src/server/modules/voice/providers/openai/realtime/openAiRealtimeRecoveryManager.ts
+ create mode 100644 src/server/modules/voice/providers/openai/realtime/openAiRealtimeSessionManager.ts
+ create mode 100644 src/server/modules/voice/providers/providerConfig.ts
+ create mode 100644 src/server/modules/voice/providers/providerErrors.ts
+ create mode 100644 src/server/modules/voice/providers/providerHealth.ts
+ create mode 100644 src/server/modules/voice/providers/signalwire/signalWireCallRouter.ts
+ create mode 100644 src/server/modules/voice/providers/signalwire/signalWireInboundMediaBridge.ts
+ create mode 100644 src/server/modules/voice/providers/signalwire/signalWireOutboundAudioBridge.ts
+ create mode 100644 src/server/modules/voice/providers/signalwire/signalWireOutboundChunker.ts
+ create mode 100644 src/server/modules/voice/providers/signalwire/signalWireOutboundQueue.ts
+ create mode 100644 src/server/modules/voice/providers/signalwire/signalWirePlaybackState.ts
+ create mode 100644 src/server/modules/voice/providers/signalwire/signalWireWebhookVerifier.ts
+ create mode 100644 src/server/modules/voice/reasoning/README.md
+ create mode 100644 src/server/modules/voice/runtime/liveConversationRuntimeState.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeAnalyticsPipeline.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeConcurrencyGuard.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeConversationLogger.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeLeadCapture.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimePersistencePipeline.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimePipeline.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeRecoveryManager.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeSessionHealthMonitor.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeSessionRegistry.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeSessionRouter.ts
+ create mode 100644 src/server/modules/voice/runtime/liveRuntimeTenantContext.ts
+ create mode 100644 src/server/modules/voice/runtime/tests/liveRuntimeConcurrencyGuard.test.ts
+ create mode 100644 src/server/modules/voice/runtime/tests/liveRuntimePipeline.test.ts
+ create mode 100644 src/server/modules/voice/runtime/tests/mockRuntimeProviders.ts
+ create mode 100644 src/server/modules/voice/security/abuseDetection.ts
+ create mode 100644 src/server/modules/voice/security/auditLogger.ts
+ create mode 100644 src/server/modules/voice/security/piiRedaction.ts
+ create mode 100644 src/server/modules/voice/security/rateLimiter.ts
+ create mode 100644 src/server/modules/voice/security/tenantIsolationGuard.ts
+ create mode 100644 src/server/modules/voice/security/webhookSignatureVerifier.ts
+ create mode 100644 src/server/modules/voice/security/websocketAuthGuard.ts
+ create mode 100644 src/server/modules/voice/tools/README.md
+ create mode 100644 src/server/modules/voice/tools/tools/bookingTool.ts
+ create mode 100644 src/server/modules/voice/tools/tools/leadTool.ts
+ create mode 100644 src/server/modules/voice/tools/tools/pricingTool.ts
+ create mode 100644 src/server/modules/voice/tools/tools/serviceAreaTool.ts
+ create mode 100644 src/server/modules/voice/tools/tools/smsTool.ts
+ create mode 100644 src/server/modules/voice/tools/tools/transferTool.ts
+ create mode 100644 src/server/modules/voice/tools/voiceToolRegistry.ts
+ create mode 100644 src/server/modules/voice/tools/voiceToolRuntime.ts
+ create mode 100644 src/server/modules/voice/transport/liveCallBridge.ts
+ create mode 100644 src/server/modules/voice/transport/mediaStreamRouter.ts
+ create mode 100644 src/server/modules/voice/transport/signalWireRealtimeSocket.ts
+ create mode 100644 src/server/modules/voice/transport/websocketConnectionManager.ts
+ create mode 100644 src/server/modules/voice/tts/README.md
+ create mode 100644 src/server/modules/voice/tts/ttsChunkNormalizer.ts
+ create mode 100644 src/server/modules/voice/tts/ttsFailoverManager.ts
+ create mode 100644 src/server/modules/voice/tts/ttsProvider.ts
+ create mode 100644 src/server/modules/voice/tts/ttsRouter.ts
+ create mode 100644 src/server/modules/voice/widget/README.md
+ create mode 100644 src/server/modules/voice/widget/widgetConversationPipeline.ts
+ create mode 100644 src/server/modules/voice/widget/widgetInstallConfig.ts
+ create mode 100644 src/server/modules/voice/widget/widgetLeadCapture.ts
+ create mode 100644 src/server/modules/voice/widget/widgetPricingFlow.ts
+ create mode 100644 src/server/modules/voice/widget/widgetRuntime.ts
+ create mode 100644 src/server/modules/voice/widget/widgetServiceAreaFlow.ts
+ create mode 100644 src/server/modules/voice/workers/README.md
+ create mode 100644 src/server/modules/voice/workers/analyticsWorker.ts
+ create mode 100644 src/server/modules/voice/workers/failoverWorker.ts
+ create mode 100644 src/server/modules/voice/workers/leadCaptureWorker.ts
+ create mode 100644 src/server/modules/voice/workers/notificationWorker.ts
+ create mode 100644 src/server/modules/voice/workers/queueProcessor.ts
+ create mode 100644 src/server/modules/voice/workers/reasoningWorker.ts
+ create mode 100644 src/server/modules/voice/workers/retryWorker.ts
+ create mode 100644 src/server/modules/voice/workers/summaryWorker.ts
+ create mode 100644 src/server/modules/voice/workers/transcriptWorker.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimeAbandonedLeadWorkflow.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimeAfterHoursWorkflow.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimeBookingWorkflow.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimeEmergencyWorkflow.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimeHumanTransferWorkflow.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimeLeadCaptureWorkflow.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimePricingWorkflow.ts
+ create mode 100644 src/server/modules/voice/workflows/realtimeSupportWorkflow.ts
+ create mode 100644 tsconfig.json
+
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..b73303e
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,15 @@
++# Senna 2.0
++
++Clean phone-system workspace for the production voice runtime.
++
++This workspace starts with the core boundaries first:
++
++- canonical voice runtime config
++- persistence adapter contracts
++- provider interfaces for telephony, STT, LLM, and TTS
++- store-backed workflow ports
++- SignalWire webhook route placeholders
++- testable in-memory adapters
++
++Production adapters for Supabase/Postgres, Redis, SignalWire, Deepgram, OpenAI, and TTS providers should plug into these interfaces without changing workflow code.
++
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000..0c898c6
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,23 @@
++{
++  "name": "senna-2.0",
++  "version": "0.1.0",
++  "private": true,
++  "type": "module",
++  "scripts": {
++    "build": "tsc --noEmit",
++    "test": "vitest run",
++    "dev": "tsx watch src/server.ts"
++  },
++  "dependencies": {
++    "express": "^4.21.2",
++    "zod": "^4.1.12"
++  },
++  "devDependencies": {
++    "@types/express": "^4.17.21",
++    "@types/node": "^24.7.0",
++    "tsx": "^4.19.1",
++    "typescript": "5.9.3",
++    "vitest": "^2.1.9"
++  },
++  "packageManager": "pnpm@10.4.1"
++}
+diff --git a/src/server.ts b/src/server.ts
+new file mode 100644
+index 0000000..2033db3
+--- /dev/null
++++ b/src/server.ts
+@@ -0,0 +1,8 @@
++import { createApp } from './server/app.js';
++
++const port = Number(process.env.PORT ?? 3000);
++const app = createApp();
++
++app.listen(port, () => {
++  console.log(`[senna] listening on :${port}`);
++});
+diff --git a/src/server/app.ts b/src/server/app.ts
+new file mode 100644
+index 0000000..ac22ec0
+--- /dev/null
++++ b/src/server/app.ts
+@@ -0,0 +1,15 @@
++import express from 'express';
++import { createVoiceRouter } from './modules/voice/transport/liveCallBridge.js';
++
++export function createApp() {
++  const app = express();
++
++  app.use(express.json({ limit: '1mb' }));
++  app.use('/voice', createVoiceRouter());
++
++  app.get('/health', (_req, res) => {
++    res.json({ ok: true, service: 'senna-2.0' });
++  });
++
++  return app;
++}
+diff --git a/src/server/modules/voice/README.md b/src/server/modules/voice/README.md
+new file mode 100644
+index 0000000..4835599
+--- /dev/null
++++ b/src/server/modules/voice/README.md
+@@ -0,0 +1,20 @@
++# Voice Module
++
++The voice module owns Senna's phone-system runtime.
++
++Clean module layout:
++
++- `config/`: tenant, business, location, provider, feature flag, and runtime limit resolution
++- `integrations/`: CRM, POS, reservation, scheduling, and vertical adapters
++- `persistence/`: storage ports and test adapters
++- `providers/`: SignalWire, Deepgram, OpenAI, and TTS ports/adapters
++- `transport/`: HTTP/webhook/socket entrypoints and streaming transport
++- `workflows/`: call, media, lead, pricing, booking, emergency, transfer, and after-hours orchestration
++
++Rules:
++
++- Runtime workflows depend on interfaces, not concrete vendors.
++- Provider adapters do not own business logic.
++- Persistence adapters do not own call workflow decisions.
++- Every tenant, business, location, call, session, transcript, tool execution, and event carries tenant/business scope.
++- Multi-call concurrency is enforced before creating live sessions.
+diff --git a/src/server/modules/voice/VOICE_ARCHITECTURE.md b/src/server/modules/voice/VOICE_ARCHITECTURE.md
+new file mode 100644
+index 0000000..e6f36c0
+--- /dev/null
++++ b/src/server/modules/voice/VOICE_ARCHITECTURE.md
+@@ -0,0 +1,94 @@
++# Voice Module Architecture
++
++This voice system is a multi-tenant, multi-business, multi-location, multi-call realtime voice platform.
++
++Every production call path must preserve:
++
++- `tenantId`
++- `businessId`
++- `locationId` when available
++- `callId`
++- `sessionId`
++
++## Tenant, Brand, Business, Location Model
++
++The hierarchy is:
++
++`tenant -> brand? -> business -> location`
++
++`brandId` is optional. `locationId` is optional at the API/config edge, but required internally before any workflow runs.
++
++Single-location clients should not manage locations as a complex product feature. The system creates and uses a default location behind the scenes:
++
++- Tenant: Buckeye Beaver Pools
++- Business: Buckeye Beaver Pools
++- Location: default
++
++Multi-location brands resolve to real branches:
++
++- Tenant: Valley Service Group
++- Brand: Buckeye Beaver Pools
++- Business: Buckeye Beaver Pools
++- Locations: Buckeye, Peoria, Scottsdale, Mesa
++
++No call, chat, lead, quote, transcript, or analytics record may be impossible to assign to a location. Single-location records use the default location. Multi-location records resolve location by explicit selection, phone number, zip code, city, service area, fallback location, or default location.
++
++The runtime pipeline is:
++
++1. `config/`: resolve tenant, brand, business, concrete location, providers, limits, features.
++2. `security/`: validate tenant isolation, webhook, websocket, and rate limits.
++3. `transport/` or `widget/`: accept voice stream or widget message.
++4. `runtime/`: create live session, tenant context, and concurrency lock.
++5. `events/`: publish typed runtime event.
++6. `workers/`: process async jobs.
++7. `reasoning/` and `llm/`: classify intent, answer business questions, plan tools.
++8. `tools/` and `workflows/`: pricing, service area, lead capture, booking, emergency, transfer.
++9. `integrations/`: route CRM, POS, reservation, scheduling, and vertical requests through adapters.
++10. `providers/`: OpenAI, Deepgram, SignalWire, TTS providers.
++11. `persistence/`: store calls, sessions, transcripts, conversations, leads, analytics.
++12. `observability/`: logs, traces, latency, provider health, errors.
++
++## Approved Top-Level Modules
++
++- `audio/`: realtime TTS chunks, playback queues, assistant speech state, audio buffering.
++- `business/`: business knowledge, pricing knowledge, FAQ knowledge, policy knowledge, service area knowledge.
++- `conversation/`: turn detection, interruption handling, duplex coordination, barge-in control, speech turns.
++- `distributed/`: region coordination, session state sync, event queues, failover, retry, latency monitoring.
++- `events/`: runtime event bus, event publishing, event subscribing, event routing.
++- `integrations/`: adapter-based CRM, POS, reservation, scheduling, and vertical system integrations.
++- `llm/`: LLM reasoning entrypoints, OpenAI tool reasoner, model-facing response decisions.
++- `metrics/`: runtime and voice metrics.
++- `orchestrator/`: high-level live voice orchestration.
++- `persistence/`: conversation, transcript, lead, analytics, and call state storage abstraction.
++- `providers/`: external infrastructure providers such as OpenAI, Deepgram, SignalWire, Twilio, ElevenLabs, Cartesia.
++- `reasoning/`: intent classification, response planning, business question answering, tool decision logic, conversation memory.
++- `runtime/`: live runtime execution, tenant context, session registry, runtime pipeline, concurrency guard.
++- `tools/`: actual callable voice tools used by the LLM/tool reasoner.
++- `transport/`: sockets, telephony, streaming, webhook, and realtime audio movement.
++- `tts/`: text-to-speech abstraction and provider-facing speech output logic.
++- `workers/`: async job processing for transcripts, reasoning, leads, analytics, retry, and failover.
++- `workflows/`: lead capture, pricing, booking, emergency handling, after-hours, and transfer workflows.
++- `widget/`: widget-facing voice/chat runtime entrypoints.
++
++## Deprecated Modules
++
++Do not recreate these as top-level voice modules:
++
++- `decision/`
++- `departments/`
++- `routing/`
++- `state/`
++- standalone `openai/`
++
++Use `reasoning/`, `orchestrator/`, `runtime/`, `transport/`, and `providers/` instead.
++
++## Provider Direction
++
++The first-class production stack is:
++
++- SignalWire for telephony and media streams.
++- Deepgram for STT.
++- OpenAI for LLM reasoning and tool selection.
++- Deepgram Voice for TTS.
++
++Providers are adapters. Workflows and runtime code should depend on provider ports, not SDK clients.
+diff --git a/src/server/modules/voice/audio/README.md b/src/server/modules/voice/audio/README.md
+new file mode 100644
+index 0000000..27e146c
+--- /dev/null
++++ b/src/server/modules/voice/audio/README.md
+@@ -0,0 +1,3 @@
++# audio Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/audio/audioChunkProcessor.ts b/src/server/modules/voice/audio/audioChunkProcessor.ts
+new file mode 100644
+index 0000000..85a3c0d
+--- /dev/null
++++ b/src/server/modules/voice/audio/audioChunkProcessor.ts
+@@ -0,0 +1 @@
++export const audioChunkProcessor = 'audioChunkProcessor';
+diff --git a/src/server/modules/voice/audio/realtimeAssistantSpeechState.ts b/src/server/modules/voice/audio/realtimeAssistantSpeechState.ts
+new file mode 100644
+index 0000000..cd22320
+--- /dev/null
++++ b/src/server/modules/voice/audio/realtimeAssistantSpeechState.ts
+@@ -0,0 +1 @@
++export const realtimeAssistantSpeechState = 'realtimeAssistantSpeechState';
+diff --git a/src/server/modules/voice/audio/realtimeTtsChunkBuffer.ts b/src/server/modules/voice/audio/realtimeTtsChunkBuffer.ts
+new file mode 100644
+index 0000000..2492b71
+--- /dev/null
++++ b/src/server/modules/voice/audio/realtimeTtsChunkBuffer.ts
+@@ -0,0 +1 @@
++export const realtimeTtsChunkBuffer = 'realtimeTtsChunkBuffer';
+diff --git a/src/server/modules/voice/audio/realtimeTtsPlaybackQueue.ts b/src/server/modules/voice/audio/realtimeTtsPlaybackQueue.ts
+new file mode 100644
+index 0000000..4e607b7
+--- /dev/null
++++ b/src/server/modules/voice/audio/realtimeTtsPlaybackQueue.ts
+@@ -0,0 +1 @@
++export const realtimeTtsPlaybackQueue = 'realtimeTtsPlaybackQueue';
+diff --git a/src/server/modules/voice/audio/realtimeTtsStreamManager.ts b/src/server/modules/voice/audio/realtimeTtsStreamManager.ts
+new file mode 100644
+index 0000000..8d26880
+--- /dev/null
++++ b/src/server/modules/voice/audio/realtimeTtsStreamManager.ts
+@@ -0,0 +1 @@
++export const realtimeTtsStreamManager = 'realtimeTtsStreamManager';
+diff --git a/src/server/modules/voice/business/README.md b/src/server/modules/voice/business/README.md
+new file mode 100644
+index 0000000..30b6c61
+--- /dev/null
++++ b/src/server/modules/voice/business/README.md
+@@ -0,0 +1,3 @@
++# business Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/business/businessKnowledgeService.ts b/src/server/modules/voice/business/businessKnowledgeService.ts
+new file mode 100644
+index 0000000..57516a9
+--- /dev/null
++++ b/src/server/modules/voice/business/businessKnowledgeService.ts
+@@ -0,0 +1 @@
++export const businessKnowledgeService = 'businessKnowledgeService';
+diff --git a/src/server/modules/voice/business/realtimeBusinessKnowledge.ts b/src/server/modules/voice/business/realtimeBusinessKnowledge.ts
+new file mode 100644
+index 0000000..2c04768
+--- /dev/null
++++ b/src/server/modules/voice/business/realtimeBusinessKnowledge.ts
+@@ -0,0 +1 @@
++export const realtimeBusinessKnowledge = 'realtimeBusinessKnowledge';
+diff --git a/src/server/modules/voice/business/realtimeFaqKnowledge.ts b/src/server/modules/voice/business/realtimeFaqKnowledge.ts
+new file mode 100644
+index 0000000..b43f075
+--- /dev/null
++++ b/src/server/modules/voice/business/realtimeFaqKnowledge.ts
+@@ -0,0 +1 @@
++export const realtimeFaqKnowledge = 'realtimeFaqKnowledge';
+diff --git a/src/server/modules/voice/business/realtimePolicyKnowledge.ts b/src/server/modules/voice/business/realtimePolicyKnowledge.ts
+new file mode 100644
+index 0000000..0e20f76
+--- /dev/null
++++ b/src/server/modules/voice/business/realtimePolicyKnowledge.ts
+@@ -0,0 +1 @@
++export const realtimePolicyKnowledge = 'realtimePolicyKnowledge';
+diff --git a/src/server/modules/voice/business/realtimePricingKnowledge.ts b/src/server/modules/voice/business/realtimePricingKnowledge.ts
+new file mode 100644
+index 0000000..8ea5e27
+--- /dev/null
++++ b/src/server/modules/voice/business/realtimePricingKnowledge.ts
+@@ -0,0 +1 @@
++export const realtimePricingKnowledge = 'realtimePricingKnowledge';
+diff --git a/src/server/modules/voice/business/realtimeServiceAreaKnowledge.ts b/src/server/modules/voice/business/realtimeServiceAreaKnowledge.ts
+new file mode 100644
+index 0000000..6f41ef8
+--- /dev/null
++++ b/src/server/modules/voice/business/realtimeServiceAreaKnowledge.ts
+@@ -0,0 +1 @@
++export const realtimeServiceAreaKnowledge = 'realtimeServiceAreaKnowledge';
+diff --git a/src/server/modules/voice/config/businessVoiceConfigResolver.ts b/src/server/modules/voice/config/businessVoiceConfigResolver.ts
+new file mode 100644
+index 0000000..7d61bb3
+--- /dev/null
++++ b/src/server/modules/voice/config/businessVoiceConfigResolver.ts
+@@ -0,0 +1,90 @@
++import type {
++  VoiceAfterHoursBehavior,
++  VoiceEmergencyRouting,
++  VoiceFaq,
++  VoiceFeatureFlags,
++  VoicePolicy,
++  VoicePricingRule,
++  VoiceProviderConfig,
++  VoiceRuntimeLimits,
++  VoiceService,
++  VoiceServiceArea,
++} from './providerVoiceConfigResolver.js';
++
++export type TenantVoiceRecord = {
++  tenantId: string;
++  name: string;
++  enabled: boolean;
++  providers?: Partial<VoiceProviderConfig>;
++  featureFlags?: Partial<VoiceFeatureFlags>;
++  runtimeLimits?: Partial<VoiceRuntimeLimits>;
++};
++
++export type BusinessVoiceRecord = {
++  tenantId: string;
++  brandId?: string;
++  businessId: string;
++  name: string;
++  brandName?: string;
++  phoneNumber: string;
++  enabled: boolean;
++  defaultLocationId: string;
++  isMultiLocation: boolean;
++  routing?: {
++    routeByPhoneNumber?: boolean;
++    routeByZipCode?: boolean;
++    routeByCity?: boolean;
++    fallbackLocationId?: string;
++  };
++  providers?: Partial<VoiceProviderConfig>;
++  featureFlags?: Partial<VoiceFeatureFlags>;
++  runtimeLimits?: Partial<VoiceRuntimeLimits>;
++  services: VoiceService[];
++  serviceAreas: VoiceServiceArea[];
++  pricingRules: VoicePricingRule[];
++  faqs: VoiceFaq[];
++  policies: VoicePolicy[];
++  emergencyRouting?: Partial<VoiceEmergencyRouting>;
++  afterHoursBehavior?: Partial<VoiceAfterHoursBehavior>;
++};
++
++export type LocationVoiceRecord = {
++  tenantId: string;
++  brandId?: string;
++  businessId: string;
++  locationId: string;
++  name: string;
++  phoneNumber?: string;
++  cities?: string[];
++  zipCodes?: string[];
++  enabled: boolean;
++  providers?: Partial<VoiceProviderConfig>;
++  featureFlags?: Partial<VoiceFeatureFlags>;
++  runtimeLimits?: Partial<VoiceRuntimeLimits>;
++  services?: VoiceService[];
++  serviceAreas?: VoiceServiceArea[];
++  pricingRules?: VoicePricingRule[];
++  faqs?: VoiceFaq[];
++  policies?: VoicePolicy[];
++  emergencyRouting?: Partial<VoiceEmergencyRouting>;
++  afterHoursBehavior?: Partial<VoiceAfterHoursBehavior>;
++};
++
++export type VoiceConfigRepository = {
++  findTenant(tenantId: string): Promise<TenantVoiceRecord | null>;
++  findBusiness(input: {
++    tenantId?: string;
++    businessId?: string;
++    phoneNumber?: string;
++  }): Promise<BusinessVoiceRecord | null>;
++  findLocation(input: {
++    tenantId: string;
++    businessId: string;
++    locationId?: string;
++    phoneNumber?: string;
++    city?: string;
++    zipCode?: string;
++    defaultLocationId?: string;
++    fallbackLocationId?: string;
++  }): Promise<LocationVoiceRecord | null>;
++};
+diff --git a/src/server/modules/voice/config/locationVoiceConfigResolver.ts b/src/server/modules/voice/config/locationVoiceConfigResolver.ts
+new file mode 100644
+index 0000000..a0d96d8
+--- /dev/null
++++ b/src/server/modules/voice/config/locationVoiceConfigResolver.ts
+@@ -0,0 +1,5 @@
++export type {
++  LocationVoiceRecord,
++  VoiceConfigRepository,
++} from './businessVoiceConfigResolver.js';
++
+diff --git a/src/server/modules/voice/config/memoryVoiceConfigRepository.ts b/src/server/modules/voice/config/memoryVoiceConfigRepository.ts
+new file mode 100644
+index 0000000..2a82cdd
+--- /dev/null
++++ b/src/server/modules/voice/config/memoryVoiceConfigRepository.ts
+@@ -0,0 +1,169 @@
++import type {
++  BusinessVoiceRecord,
++  LocationVoiceRecord,
++  TenantVoiceRecord,
++  VoiceConfigRepository,
++} from './businessVoiceConfigResolver.js';
++import { normalizePhoneNumber } from './tenantVoiceConfigResolver.js';
++
++export function createMemoryVoiceConfigRepository(input?: {
++  tenants?: TenantVoiceRecord[];
++  businesses?: BusinessVoiceRecord[];
++  locations?: LocationVoiceRecord[];
++}): VoiceConfigRepository {
++  const tenants = input?.tenants ?? [defaultTenant];
++  const businesses = input?.businesses ?? [defaultBusiness];
++  const locations = [
++    ...(input?.locations ?? []),
++    ...businesses
++      .filter(
++        business =>
++          !(input?.locations ?? []).some(
++            location =>
++              location.tenantId === business.tenantId &&
++              location.businessId === business.businessId &&
++              location.locationId === business.defaultLocationId
++          )
++      )
++      .map(createDefaultLocationForBusiness),
++  ];
++
++  return {
++    async findTenant(tenantId) {
++      return tenants.find(tenant => tenant.tenantId === tenantId) ?? null;
++    },
++    async findBusiness(query) {
++      return (
++        businesses.find(business => {
++          if (query.tenantId && business.tenantId !== query.tenantId) return false;
++          if (query.businessId && business.businessId !== query.businessId) return false;
++          if (query.phoneNumber) {
++            return normalizePhoneNumber(business.phoneNumber) === normalizePhoneNumber(query.phoneNumber);
++          }
++          return true;
++        }) ?? null
++      );
++    },
++    async findLocation(query) {
++      const scopedLocations = locations.filter(
++        location =>
++          location.tenantId === query.tenantId &&
++          location.businessId === query.businessId
++      );
++
++      if (query.locationId) {
++        return (
++          scopedLocations.find(location => location.locationId === query.locationId) ??
++          null
++        );
++      }
++
++      if (query.phoneNumber) {
++        const byPhone = scopedLocations.find(
++          location =>
++            location.phoneNumber &&
++            normalizePhoneNumber(location.phoneNumber) ===
++              normalizePhoneNumber(query.phoneNumber!)
++        );
++        if (byPhone) return byPhone;
++      }
++
++      if (query.zipCode) {
++        const byZipCode = scopedLocations.find(location =>
++          location.zipCodes?.includes(query.zipCode!)
++        );
++        if (byZipCode) return byZipCode;
++      }
++
++      if (query.city) {
++        const normalizedCity = normalizeText(query.city);
++        const byCity = scopedLocations.find(location =>
++          location.cities?.some(city => normalizeText(city) === normalizedCity)
++        );
++        if (byCity) return byCity;
++      }
++
++      const fallbackLocationId =
++        query.fallbackLocationId ?? query.defaultLocationId;
++
++      return (
++        scopedLocations.find(
++          location => location.locationId === fallbackLocationId
++        ) ?? null
++      );
++    },
++  };
++}
++
++function createDefaultLocationForBusiness(
++  business: BusinessVoiceRecord
++): LocationVoiceRecord {
++  return {
++    tenantId: business.tenantId,
++    businessId: business.businessId,
++    locationId: business.defaultLocationId,
++    name: 'default',
++    phoneNumber: business.phoneNumber,
++    enabled: true,
++    services: business.services,
++    serviceAreas: business.serviceAreas,
++    pricingRules: business.pricingRules,
++    faqs: business.faqs,
++    policies: business.policies,
++    ...(business.brandId ? { brandId: business.brandId } : {}),
++  };
++}
++
++function normalizeText(value: string): string {
++  return value.trim().toLowerCase();
++}
++
++const defaultTenant: TenantVoiceRecord = {
++  tenantId: 'tenant_demo',
++  name: 'Demo Tenant',
++  enabled: true,
++};
++
++const defaultBusiness: BusinessVoiceRecord = {
++  tenantId: 'tenant_demo',
++  businessId: 'business_demo',
++  name: 'Senna Demo Services',
++  phoneNumber: '+14805550100',
++  enabled: true,
++  defaultLocationId: 'location_default',
++  isMultiLocation: false,
++  services: [
++    {
++      id: 'service_pool',
++      name: 'Pool Cleaning',
++      enabled: true,
++    },
++  ],
++  serviceAreas: [
++    {
++      id: 'area_phoenix',
++      city: 'Phoenix',
++      state: 'AZ',
++      zipCodes: ['85001'],
++      enabled: true,
++    },
++  ],
++  pricingRules: [
++    {
++      id: 'price_pool',
++      serviceId: 'service_pool',
++      label: 'Pool Cleaning',
++      basePriceCents: 12500,
++      enabled: true,
++    },
++  ],
++  faqs: [
++    {
++      id: 'faq_insured',
++      question: 'Are you insured?',
++      answer: 'Yes, our team is insured.',
++      enabled: true,
++    },
++  ],
++  policies: [],
++};
+diff --git a/src/server/modules/voice/config/providerVoiceConfigResolver.ts b/src/server/modules/voice/config/providerVoiceConfigResolver.ts
+new file mode 100644
+index 0000000..0a0b1c8
+--- /dev/null
++++ b/src/server/modules/voice/config/providerVoiceConfigResolver.ts
+@@ -0,0 +1,137 @@
++export type VoiceProviderName =
++  | 'signalwire'
++  | 'deepgram'
++  | 'openai'
++  | 'deepgram_voice';
++
++export type VoiceProviderConfig = {
++  telephony: VoiceProviderName;
++  stt: VoiceProviderName;
++  llm: VoiceProviderName;
++  tts: VoiceProviderName;
++};
++
++export type VoiceFeatureFlags = {
++  smsEnabled: boolean;
++  bookingEnabled: boolean;
++  recordingEnabled: boolean;
++  emergencyRoutingEnabled: boolean;
++  humanTransferEnabled: boolean;
++};
++
++export type VoiceRuntimeLimits = {
++  maxCallDurationSeconds: number;
++  maxTranscriptCharacters: number;
++  maxToolExecutionsPerCall: number;
++  maxRealtimeReconnects: number;
++  maxConcurrentTenantCalls: number;
++  maxConcurrentBusinessCalls: number;
++  maxConcurrentLocationCalls: number;
++  maxCallStartsPerMinute: number;
++};
++
++export type VoiceService = {
++  id: string;
++  name: string;
++  description?: string;
++  enabled: boolean;
++};
++
++export type VoiceServiceArea = {
++  id: string;
++  city?: string;
++  state?: string;
++  zipCodes: string[];
++  enabled: boolean;
++};
++
++export type VoicePricingRule = {
++  id: string;
++  serviceId?: string;
++  label: string;
++  basePriceCents?: number;
++  recurringPriceCents?: number;
++  enabled: boolean;
++};
++
++export type VoiceFaq = {
++  id: string;
++  question: string;
++  answer: string;
++  enabled: boolean;
++};
++
++export type VoicePolicy = {
++  id: string;
++  name: string;
++  description: string;
++  enabled: boolean;
++};
++
++export type VoiceAfterHoursBehavior = {
++  mode: 'answer' | 'voicemail' | 'transfer' | 'closed_message';
++  message?: string;
++  transferNumber?: string;
++};
++
++export type VoiceEmergencyRouting = {
++  enabled: boolean;
++  transferNumber?: string;
++  instructions?: string;
++};
++
++export type VoiceRuntimeConfig = {
++  tenantId: string;
++  brandId?: string;
++  businessId: string;
++  locationId: string;
++  businessName: string;
++  brandName?: string;
++  locationName: string;
++  phoneNumber: string;
++  isMultiLocation: boolean;
++  routing: {
++    mode: 'single_location' | 'multi_location';
++    defaultLocationId: string;
++    routeByPhoneNumber: boolean;
++    routeByZipCode: boolean;
++    routeByCity: boolean;
++    fallbackLocationId?: string;
++  };
++  providers: VoiceProviderConfig;
++  featureFlags: VoiceFeatureFlags;
++  runtimeLimits: VoiceRuntimeLimits;
++  services: VoiceService[];
++  serviceAreas: VoiceServiceArea[];
++  pricingRules: VoicePricingRule[];
++  faqs: VoiceFaq[];
++  policies: VoicePolicy[];
++  emergencyRouting: VoiceEmergencyRouting;
++  afterHoursBehavior: VoiceAfterHoursBehavior;
++};
++
++export const defaultProviders: VoiceProviderConfig = {
++  telephony: 'signalwire',
++  stt: 'deepgram',
++  llm: 'openai',
++  tts: 'deepgram_voice',
++};
++
++export const defaultFeatureFlags: VoiceFeatureFlags = {
++  smsEnabled: false,
++  bookingEnabled: false,
++  recordingEnabled: false,
++  emergencyRoutingEnabled: true,
++  humanTransferEnabled: false,
++};
++
++export const defaultRuntimeLimits: VoiceRuntimeLimits = {
++  maxCallDurationSeconds: 900,
++  maxTranscriptCharacters: 80_000,
++  maxToolExecutionsPerCall: 20,
++  maxRealtimeReconnects: 3,
++  maxConcurrentTenantCalls: 500,
++  maxConcurrentBusinessCalls: 100,
++  maxConcurrentLocationCalls: 25,
++  maxCallStartsPerMinute: 120,
++};
+diff --git a/src/server/modules/voice/config/runtimeVoiceLimits.ts b/src/server/modules/voice/config/runtimeVoiceLimits.ts
+new file mode 100644
+index 0000000..6bb4995
+--- /dev/null
++++ b/src/server/modules/voice/config/runtimeVoiceLimits.ts
+@@ -0,0 +1,5 @@
++export {
++  defaultRuntimeLimits,
++  type VoiceRuntimeLimits,
++} from './providerVoiceConfigResolver.js';
++
+diff --git a/src/server/modules/voice/config/tenantVoiceConfigResolver.ts b/src/server/modules/voice/config/tenantVoiceConfigResolver.ts
+new file mode 100644
+index 0000000..12341fd
+--- /dev/null
++++ b/src/server/modules/voice/config/tenantVoiceConfigResolver.ts
+@@ -0,0 +1,157 @@
++import {
++  defaultFeatureFlags,
++  defaultProviders,
++  defaultRuntimeLimits,
++  type VoiceRuntimeConfig,
++} from './providerVoiceConfigResolver.js';
++import type { VoiceConfigRepository } from './businessVoiceConfigResolver.js';
++
++export class VoiceConfigError extends Error {
++  constructor(
++    message: string,
++    readonly code:
++      | 'TENANT_NOT_FOUND'
++      | 'BUSINESS_NOT_FOUND'
++      | 'LOCATION_NOT_FOUND'
++      | 'DISABLED'
++  ) {
++    super(message);
++    this.name = 'VoiceConfigError';
++  }
++}
++
++export function normalizePhoneNumber(phoneNumber: string): string {
++  const trimmed = phoneNumber.trim();
++  if (trimmed.startsWith('+')) return trimmed;
++
++  const digits = trimmed.replace(/\D/g, '');
++  if (digits.length === 10) return `+1${digits}`;
++  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
++  return trimmed;
++}
++
++export async function resolveVoiceRuntimeConfig(input: {
++  tenantId?: string;
++  businessId?: string;
++  locationId?: string;
++  phoneNumber?: string;
++  city?: string;
++  zipCode?: string;
++  repository: VoiceConfigRepository;
++}): Promise<VoiceRuntimeConfig> {
++  const phoneNumber = input.phoneNumber
++    ? normalizePhoneNumber(input.phoneNumber)
++    : undefined;
++  const business = await input.repository.findBusiness({
++    tenantId: input.tenantId,
++    businessId: input.businessId,
++    phoneNumber,
++  });
++
++  if (!business) {
++    throw new VoiceConfigError('No voice business matched this call', 'BUSINESS_NOT_FOUND');
++  }
++  if (!business.enabled) {
++    throw new VoiceConfigError('Voice is disabled for this business', 'DISABLED');
++  }
++
++  const tenant = await input.repository.findTenant(business.tenantId);
++  if (!tenant) {
++    throw new VoiceConfigError('No voice tenant matched this call', 'TENANT_NOT_FOUND');
++  }
++  if (!tenant.enabled) {
++    throw new VoiceConfigError('Voice is disabled for this tenant', 'DISABLED');
++  }
++
++  const location = await input.repository.findLocation({
++    tenantId: business.tenantId,
++    businessId: business.businessId,
++    locationId: input.locationId,
++    phoneNumber,
++    city: input.city,
++    zipCode: input.zipCode,
++    defaultLocationId: business.defaultLocationId,
++    fallbackLocationId: business.routing?.fallbackLocationId,
++  });
++  if (!location) {
++    throw new VoiceConfigError(
++      'No voice location matched this call',
++      'LOCATION_NOT_FOUND'
++    );
++  }
++  if (location && !location.enabled) {
++    throw new VoiceConfigError('Voice is disabled for this location', 'DISABLED');
++  }
++
++  const featureFlags = {
++    ...defaultFeatureFlags,
++    ...tenant.featureFlags,
++    ...business.featureFlags,
++    ...location.featureFlags,
++  };
++  const runtimeLimits = {
++    ...defaultRuntimeLimits,
++    ...tenant.runtimeLimits,
++    ...business.runtimeLimits,
++    ...location.runtimeLimits,
++  };
++
++  return {
++    tenantId: business.tenantId,
++    ...(business.brandId ? { brandId: business.brandId } : {}),
++    businessId: business.businessId,
++    locationId: location.locationId,
++    businessName: business.name,
++    ...(business.brandName ? { brandName: business.brandName } : {}),
++    locationName: location.name,
++    phoneNumber: location.phoneNumber ?? business.phoneNumber,
++    isMultiLocation: business.isMultiLocation,
++    routing: {
++      mode: business.isMultiLocation ? 'multi_location' : 'single_location',
++      defaultLocationId: business.defaultLocationId,
++      routeByPhoneNumber: business.routing?.routeByPhoneNumber ?? true,
++      routeByZipCode: business.routing?.routeByZipCode ?? business.isMultiLocation,
++      routeByCity: business.routing?.routeByCity ?? business.isMultiLocation,
++      ...(business.routing?.fallbackLocationId
++        ? { fallbackLocationId: business.routing.fallbackLocationId }
++        : {}),
++    },
++    providers: {
++      ...defaultProviders,
++      ...tenant.providers,
++      ...business.providers,
++      ...location.providers,
++    },
++    featureFlags,
++    runtimeLimits,
++    services: location.services ?? business.services,
++    serviceAreas: location.serviceAreas ?? business.serviceAreas,
++    pricingRules: location.pricingRules ?? business.pricingRules,
++    faqs: location.faqs ?? business.faqs,
++    policies: location.policies ?? business.policies,
++    emergencyRouting: {
++      enabled:
++        location.emergencyRouting?.enabled ??
++        business.emergencyRouting?.enabled ??
++        featureFlags.emergencyRoutingEnabled,
++      transferNumber:
++        location.emergencyRouting?.transferNumber ??
++        business.emergencyRouting?.transferNumber,
++      instructions:
++        location.emergencyRouting?.instructions ??
++        business.emergencyRouting?.instructions,
++    },
++    afterHoursBehavior: {
++      mode:
++        location.afterHoursBehavior?.mode ??
++        business.afterHoursBehavior?.mode ??
++        'answer',
++      message:
++        location.afterHoursBehavior?.message ??
++        business.afterHoursBehavior?.message,
++      transferNumber:
++        location.afterHoursBehavior?.transferNumber ??
++        business.afterHoursBehavior?.transferNumber,
++    },
++  };
++}
+diff --git a/src/server/modules/voice/config/tests/tenantVoiceConfigResolver.test.ts b/src/server/modules/voice/config/tests/tenantVoiceConfigResolver.test.ts
+new file mode 100644
+index 0000000..32b332f
+--- /dev/null
++++ b/src/server/modules/voice/config/tests/tenantVoiceConfigResolver.test.ts
+@@ -0,0 +1,170 @@
++import { describe, expect, it } from 'vitest';
++import { VoiceConfigError, resolveVoiceRuntimeConfig } from '../tenantVoiceConfigResolver.js';
++import type {
++  BusinessVoiceRecord,
++  LocationVoiceRecord,
++  TenantVoiceRecord,
++} from '../businessVoiceConfigResolver.js';
++import { createMemoryVoiceConfigRepository } from '../memoryVoiceConfigRepository.js';
++
++const tenant: TenantVoiceRecord = {
++  tenantId: 'tenant_enterprise',
++  name: 'Enterprise Tenant',
++  enabled: true,
++  providers: {
++    telephony: 'signalwire',
++    stt: 'deepgram',
++    llm: 'openai',
++    tts: 'deepgram_voice',
++  },
++  runtimeLimits: {
++    maxConcurrentTenantCalls: 1000,
++  },
++};
++
++const business: BusinessVoiceRecord = {
++  tenantId: 'tenant_enterprise',
++  businessId: 'business_hq',
++  name: 'Enterprise Home Services',
++  phoneNumber: '+14805550100',
++  enabled: true,
++  defaultLocationId: 'location_default',
++  isMultiLocation: false,
++  featureFlags: {
++    smsEnabled: true,
++    bookingEnabled: true,
++  },
++  services: [{ id: 'svc_hvac', name: 'HVAC', enabled: true }],
++  serviceAreas: [
++    {
++      id: 'area_phoenix',
++      city: 'Phoenix',
++      state: 'AZ',
++      zipCodes: ['85001'],
++      enabled: true,
++    },
++  ],
++  pricingRules: [
++    {
++      id: 'price_hvac',
++      serviceId: 'svc_hvac',
++      label: 'HVAC diagnostic',
++      basePriceCents: 9900,
++      enabled: true,
++    },
++  ],
++  faqs: [{ id: 'faq_1', question: 'Do you serve Phoenix?', answer: 'Yes.', enabled: true }],
++  policies: [],
++};
++
++const location: LocationVoiceRecord = {
++  tenantId: 'tenant_enterprise',
++  businessId: 'business_hq',
++  locationId: 'location_phoenix',
++  name: 'Phoenix',
++  phoneNumber: '+14805550101',
++  cities: ['Phoenix'],
++  zipCodes: ['85001'],
++  enabled: true,
++  runtimeLimits: {
++    maxConcurrentLocationCalls: 50,
++  },
++  services: [{ id: 'svc_pool', name: 'Pool Cleaning', enabled: true }],
++};
++
++describe('resolveVoiceRuntimeConfig', () => {
++  it('resolves enterprise provider defaults and business config by phone number', async () => {
++    const config = await resolveVoiceRuntimeConfig({
++      phoneNumber: '(480) 555-0100',
++      repository: createMemoryVoiceConfigRepository({
++        tenants: [tenant],
++        businesses: [business],
++      }),
++    });
++
++    expect(config).toMatchObject({
++      tenantId: 'tenant_enterprise',
++      businessId: 'business_hq',
++      locationId: 'location_default',
++      businessName: 'Enterprise Home Services',
++      locationName: 'default',
++      phoneNumber: '+14805550100',
++      isMultiLocation: false,
++      routing: {
++        mode: 'single_location',
++        defaultLocationId: 'location_default',
++      },
++      providers: {
++        telephony: 'signalwire',
++        stt: 'deepgram',
++        llm: 'openai',
++        tts: 'deepgram_voice',
++      },
++    });
++    expect(config.runtimeLimits.maxConcurrentTenantCalls).toBe(1000);
++    expect(config.featureFlags.smsEnabled).toBe(true);
++  });
++
++  it('supports multi-location overrides', async () => {
++    const multiLocationBusiness = {
++      ...business,
++      isMultiLocation: true,
++      defaultLocationId: 'location_default',
++      routing: {
++        routeByPhoneNumber: true,
++        routeByZipCode: true,
++        routeByCity: true,
++      },
++    };
++    const config = await resolveVoiceRuntimeConfig({
++      phoneNumber: '+14805550101',
++      repository: createMemoryVoiceConfigRepository({
++        tenants: [tenant],
++        businesses: [multiLocationBusiness],
++        locations: [location],
++      }),
++    });
++
++    expect(config.locationId).toBe('location_phoenix');
++    expect(config.locationName).toBe('Phoenix');
++    expect(config.isMultiLocation).toBe(true);
++    expect(config.routing.mode).toBe('multi_location');
++    expect(config.phoneNumber).toBe('+14805550101');
++    expect(config.services).toEqual(location.services);
++    expect(config.runtimeLimits.maxConcurrentLocationCalls).toBe(50);
++  });
++
++  it('routes multi-location calls by zip code when phone number is shared', async () => {
++    const config = await resolveVoiceRuntimeConfig({
++      phoneNumber: '+14805550100',
++      zipCode: '85001',
++      repository: createMemoryVoiceConfigRepository({
++        tenants: [tenant],
++        businesses: [
++          {
++            ...business,
++            isMultiLocation: true,
++            defaultLocationId: 'location_default',
++          },
++        ],
++        locations: [location],
++      }),
++    });
++
++    expect(config.locationId).toBe('location_phoenix');
++  });
++
++  it('fails closed when no business matches the call', async () => {
++    await expect(
++      resolveVoiceRuntimeConfig({
++        phoneNumber: '+15555550199',
++        repository: createMemoryVoiceConfigRepository({
++          tenants: [tenant],
++          businesses: [business],
++        }),
++      })
++    ).rejects.toMatchObject<Partial<VoiceConfigError>>({
++      code: 'BUSINESS_NOT_FOUND',
++    });
++  });
++});
+diff --git a/src/server/modules/voice/config/voiceFeatureFlags.ts b/src/server/modules/voice/config/voiceFeatureFlags.ts
+new file mode 100644
+index 0000000..720e4ed
+--- /dev/null
++++ b/src/server/modules/voice/config/voiceFeatureFlags.ts
+@@ -0,0 +1,5 @@
++export {
++  defaultFeatureFlags,
++  type VoiceFeatureFlags,
++} from './providerVoiceConfigResolver.js';
++
+diff --git a/src/server/modules/voice/conversation/README.md b/src/server/modules/voice/conversation/README.md
+new file mode 100644
+index 0000000..5123e12
+--- /dev/null
++++ b/src/server/modules/voice/conversation/README.md
+@@ -0,0 +1,3 @@
++# conversation Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/conversation/duplexConversationCoordinator.ts b/src/server/modules/voice/conversation/duplexConversationCoordinator.ts
+new file mode 100644
+index 0000000..69e33ff
+--- /dev/null
++++ b/src/server/modules/voice/conversation/duplexConversationCoordinator.ts
+@@ -0,0 +1 @@
++export const duplexConversationCoordinator = 'duplexConversationCoordinator';
+diff --git a/src/server/modules/voice/conversation/interruptionCoordinator.ts b/src/server/modules/voice/conversation/interruptionCoordinator.ts
+new file mode 100644
+index 0000000..7655366
+--- /dev/null
++++ b/src/server/modules/voice/conversation/interruptionCoordinator.ts
+@@ -0,0 +1 @@
++export const interruptionCoordinator = 'interruptionCoordinator';
+diff --git a/src/server/modules/voice/conversation/realtimeBargeInController.ts b/src/server/modules/voice/conversation/realtimeBargeInController.ts
+new file mode 100644
+index 0000000..71066f1
+--- /dev/null
++++ b/src/server/modules/voice/conversation/realtimeBargeInController.ts
+@@ -0,0 +1 @@
++export const realtimeBargeInController = 'realtimeBargeInController';
+diff --git a/src/server/modules/voice/conversation/realtimeConversationLocks.ts b/src/server/modules/voice/conversation/realtimeConversationLocks.ts
+new file mode 100644
+index 0000000..efc4267
+--- /dev/null
++++ b/src/server/modules/voice/conversation/realtimeConversationLocks.ts
+@@ -0,0 +1 @@
++export const realtimeConversationLocks = 'realtimeConversationLocks';
+diff --git a/src/server/modules/voice/conversation/realtimeTurnDetector.ts b/src/server/modules/voice/conversation/realtimeTurnDetector.ts
+new file mode 100644
+index 0000000..283e042
+--- /dev/null
++++ b/src/server/modules/voice/conversation/realtimeTurnDetector.ts
+@@ -0,0 +1 @@
++export const realtimeTurnDetector = 'realtimeTurnDetector';
+diff --git a/src/server/modules/voice/conversation/speechTurnManager.ts b/src/server/modules/voice/conversation/speechTurnManager.ts
+new file mode 100644
+index 0000000..e4c6f8f
+--- /dev/null
++++ b/src/server/modules/voice/conversation/speechTurnManager.ts
+@@ -0,0 +1 @@
++export const speechTurnManager = 'speechTurnManager';
+diff --git a/src/server/modules/voice/distributed/README.md b/src/server/modules/voice/distributed/README.md
+new file mode 100644
+index 0000000..0a89db0
+--- /dev/null
++++ b/src/server/modules/voice/distributed/README.md
+@@ -0,0 +1,3 @@
++# distributed Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/distributed/distributedEventQueue.ts b/src/server/modules/voice/distributed/distributedEventQueue.ts
+new file mode 100644
+index 0000000..f29dd00
+--- /dev/null
++++ b/src/server/modules/voice/distributed/distributedEventQueue.ts
+@@ -0,0 +1 @@
++export const distributedEventQueue = 'distributedEventQueue';
+diff --git a/src/server/modules/voice/distributed/distributedFailoverRouter.ts b/src/server/modules/voice/distributed/distributedFailoverRouter.ts
+new file mode 100644
+index 0000000..93305db
+--- /dev/null
++++ b/src/server/modules/voice/distributed/distributedFailoverRouter.ts
+@@ -0,0 +1 @@
++export const distributedFailoverRouter = 'distributedFailoverRouter';
+diff --git a/src/server/modules/voice/distributed/distributedLatencyMonitor.ts b/src/server/modules/voice/distributed/distributedLatencyMonitor.ts
+new file mode 100644
+index 0000000..53f9020
+--- /dev/null
++++ b/src/server/modules/voice/distributed/distributedLatencyMonitor.ts
+@@ -0,0 +1 @@
++export const distributedLatencyMonitor = 'distributedLatencyMonitor';
+diff --git a/src/server/modules/voice/distributed/distributedRegionRegistry.ts b/src/server/modules/voice/distributed/distributedRegionRegistry.ts
+new file mode 100644
+index 0000000..e483aa0
+--- /dev/null
++++ b/src/server/modules/voice/distributed/distributedRegionRegistry.ts
+@@ -0,0 +1 @@
++export const distributedRegionRegistry = 'distributedRegionRegistry';
+diff --git a/src/server/modules/voice/distributed/distributedRetryOrchestrator.ts b/src/server/modules/voice/distributed/distributedRetryOrchestrator.ts
+new file mode 100644
+index 0000000..7a2f90d
+--- /dev/null
++++ b/src/server/modules/voice/distributed/distributedRetryOrchestrator.ts
+@@ -0,0 +1 @@
++export const distributedRetryOrchestrator = 'distributedRetryOrchestrator';
+diff --git a/src/server/modules/voice/distributed/distributedRuntimeCoordinator.ts b/src/server/modules/voice/distributed/distributedRuntimeCoordinator.ts
+new file mode 100644
+index 0000000..536613e
+--- /dev/null
++++ b/src/server/modules/voice/distributed/distributedRuntimeCoordinator.ts
+@@ -0,0 +1 @@
++export const distributedRuntimeCoordinator = 'distributedRuntimeCoordinator';
+diff --git a/src/server/modules/voice/distributed/distributedSessionStateSync.ts b/src/server/modules/voice/distributed/distributedSessionStateSync.ts
+new file mode 100644
+index 0000000..8e10804
+--- /dev/null
++++ b/src/server/modules/voice/distributed/distributedSessionStateSync.ts
+@@ -0,0 +1 @@
++export const distributedSessionStateSync = 'distributedSessionStateSync';
+diff --git a/src/server/modules/voice/events/README.md b/src/server/modules/voice/events/README.md
+new file mode 100644
+index 0000000..73e534c
+--- /dev/null
++++ b/src/server/modules/voice/events/README.md
+@@ -0,0 +1,3 @@
++# events Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/events/runtimeEventBus.ts b/src/server/modules/voice/events/runtimeEventBus.ts
+new file mode 100644
+index 0000000..cd9350a
+--- /dev/null
++++ b/src/server/modules/voice/events/runtimeEventBus.ts
+@@ -0,0 +1 @@
++export const runtimeEventBus = 'runtimeEventBus';
+diff --git a/src/server/modules/voice/events/runtimeEventPublisher.ts b/src/server/modules/voice/events/runtimeEventPublisher.ts
+new file mode 100644
+index 0000000..47af4bc
+--- /dev/null
++++ b/src/server/modules/voice/events/runtimeEventPublisher.ts
+@@ -0,0 +1 @@
++export const runtimeEventPublisher = 'runtimeEventPublisher';
+diff --git a/src/server/modules/voice/events/runtimeEventRouter.ts b/src/server/modules/voice/events/runtimeEventRouter.ts
+new file mode 100644
+index 0000000..371947d
+--- /dev/null
++++ b/src/server/modules/voice/events/runtimeEventRouter.ts
+@@ -0,0 +1 @@
++export const runtimeEventRouter = 'runtimeEventRouter';
+diff --git a/src/server/modules/voice/events/runtimeEventSubscriber.ts b/src/server/modules/voice/events/runtimeEventSubscriber.ts
+new file mode 100644
+index 0000000..91a99c2
+--- /dev/null
++++ b/src/server/modules/voice/events/runtimeEventSubscriber.ts
+@@ -0,0 +1 @@
++export const runtimeEventSubscriber = 'runtimeEventSubscriber';
+diff --git a/src/server/modules/voice/events/runtimeEventTypes.ts b/src/server/modules/voice/events/runtimeEventTypes.ts
+new file mode 100644
+index 0000000..c6359ee
+--- /dev/null
++++ b/src/server/modules/voice/events/runtimeEventTypes.ts
+@@ -0,0 +1 @@
++export const runtimeEventTypes = 'runtimeEventTypes';
+diff --git a/src/server/modules/voice/integrations/crm/crmProvider.ts b/src/server/modules/voice/integrations/crm/crmProvider.ts
+new file mode 100644
+index 0000000..d0f461b
+--- /dev/null
++++ b/src/server/modules/voice/integrations/crm/crmProvider.ts
+@@ -0,0 +1,44 @@
++import type {
++  IntegrationAdapter,
++  IntegrationRequest,
++  IntegrationResult,
++} from '../integrationRegistry.js';
++
++export type CrmCapability =
++  | 'create_lead'
++  | 'update_lead'
++  | 'create_customer'
++  | 'create_appointment_request'
++  | 'sync_conversation_summary';
++
++export type CrmProvider = IntegrationAdapter & {
++  category: 'crm';
++  capabilities: CrmCapability[];
++};
++
++export function createUnsupportedCrmProvider(provider: string): CrmProvider {
++  return {
++    provider,
++    category: 'crm',
++    verticals: ['home_services', 'medical', 'salons'],
++    capabilities: [
++      'create_lead',
++      'update_lead',
++      'create_customer',
++      'create_appointment_request',
++      'sync_conversation_summary',
++    ],
++    async execute(
++      request: IntegrationRequest
++    ): Promise<IntegrationResult> {
++      return {
++        ok: false,
++        provider,
++        capability: request.capability,
++        errorMessage: `${provider} adapter is not configured yet`,
++        retryable: false,
++      };
++    },
++  };
++}
++
+diff --git a/src/server/modules/voice/integrations/crm/goHighLevelAdapter.ts b/src/server/modules/voice/integrations/crm/goHighLevelAdapter.ts
+new file mode 100644
+index 0000000..821c10e
+--- /dev/null
++++ b/src/server/modules/voice/integrations/crm/goHighLevelAdapter.ts
+@@ -0,0 +1,4 @@
++import { createUnsupportedCrmProvider } from './crmProvider.js';
++
++export const goHighLevelAdapter = createUnsupportedCrmProvider('go_high_level');
++
+diff --git a/src/server/modules/voice/integrations/crm/housecallProAdapter.ts b/src/server/modules/voice/integrations/crm/housecallProAdapter.ts
+new file mode 100644
+index 0000000..b2dfe84
+--- /dev/null
++++ b/src/server/modules/voice/integrations/crm/housecallProAdapter.ts
+@@ -0,0 +1,4 @@
++import { createUnsupportedCrmProvider } from './crmProvider.js';
++
++export const housecallProAdapter = createUnsupportedCrmProvider('housecall_pro');
++
+diff --git a/src/server/modules/voice/integrations/crm/hubspotAdapter.ts b/src/server/modules/voice/integrations/crm/hubspotAdapter.ts
+new file mode 100644
+index 0000000..ab84ff3
+--- /dev/null
++++ b/src/server/modules/voice/integrations/crm/hubspotAdapter.ts
+@@ -0,0 +1,4 @@
++import { createUnsupportedCrmProvider } from './crmProvider.js';
++
++export const hubspotAdapter = createUnsupportedCrmProvider('hubspot');
++
+diff --git a/src/server/modules/voice/integrations/crm/jobberAdapter.ts b/src/server/modules/voice/integrations/crm/jobberAdapter.ts
+new file mode 100644
+index 0000000..0c7358f
+--- /dev/null
++++ b/src/server/modules/voice/integrations/crm/jobberAdapter.ts
+@@ -0,0 +1,4 @@
++import { createUnsupportedCrmProvider } from './crmProvider.js';
++
++export const jobberAdapter = createUnsupportedCrmProvider('jobber');
++
+diff --git a/src/server/modules/voice/integrations/home_services/homeServicesProvider.ts b/src/server/modules/voice/integrations/home_services/homeServicesProvider.ts
+new file mode 100644
+index 0000000..7068cd6
+--- /dev/null
++++ b/src/server/modules/voice/integrations/home_services/homeServicesProvider.ts
+@@ -0,0 +1,13 @@
++import type { IntegrationAdapter } from '../integrationRegistry.js';
++
++export type HomeServicesCapability =
++  | 'create_quote'
++  | 'check_service_area'
++  | 'capture_lead'
++  | 'create_appointment_request';
++
++export type HomeServicesProvider = IntegrationAdapter & {
++  verticals: ['home_services'];
++  capabilities: HomeServicesCapability[];
++};
++
+diff --git a/src/server/modules/voice/integrations/home_services/homeServicesWorkflowCapabilities.ts b/src/server/modules/voice/integrations/home_services/homeServicesWorkflowCapabilities.ts
+new file mode 100644
+index 0000000..b3ccdb1
+--- /dev/null
++++ b/src/server/modules/voice/integrations/home_services/homeServicesWorkflowCapabilities.ts
+@@ -0,0 +1,7 @@
++export const homeServicesWorkflowCapabilities = [
++  'create_quote',
++  'check_service_area',
++  'capture_lead',
++  'create_appointment_request',
++] as const;
++
+diff --git a/src/server/modules/voice/integrations/home_services/tests/homeServicesWorkflowCapabilities.test.ts b/src/server/modules/voice/integrations/home_services/tests/homeServicesWorkflowCapabilities.test.ts
+new file mode 100644
+index 0000000..443c171
+--- /dev/null
++++ b/src/server/modules/voice/integrations/home_services/tests/homeServicesWorkflowCapabilities.test.ts
+@@ -0,0 +1,14 @@
++import { describe, expect, it } from 'vitest';
++import { homeServicesWorkflowCapabilities } from '../homeServicesWorkflowCapabilities.js';
++
++describe('homeServicesWorkflowCapabilities', () => {
++  it('supports quote, service area, lead capture, and appointment request flows', () => {
++    expect(homeServicesWorkflowCapabilities).toEqual([
++      'create_quote',
++      'check_service_area',
++      'capture_lead',
++      'create_appointment_request',
++    ]);
++  });
++});
++
+diff --git a/src/server/modules/voice/integrations/integrationRegistry.ts b/src/server/modules/voice/integrations/integrationRegistry.ts
+new file mode 100644
+index 0000000..4204207
+--- /dev/null
++++ b/src/server/modules/voice/integrations/integrationRegistry.ts
+@@ -0,0 +1,85 @@
++export type IntegrationVertical =
++  | 'home_services'
++  | 'restaurants'
++  | 'medical'
++  | 'salons';
++
++export type IntegrationCategory =
++  | 'crm'
++  | 'reservation'
++  | 'pos'
++  | 'scheduling'
++  | 'notification';
++
++export type IntegrationContext = {
++  tenantId: string;
++  businessId: string;
++  locationId: string;
++  brandId?: string;
++};
++
++export type IntegrationRequest<TPayload = Record<string, unknown>> = {
++  context: IntegrationContext;
++  capability: string;
++  payload: TPayload;
++};
++
++export type IntegrationResult<TData = Record<string, unknown>> = {
++  ok: boolean;
++  provider: string;
++  capability: string;
++  data?: TData;
++  errorMessage?: string;
++  retryable?: boolean;
++};
++
++export type IntegrationAdapter = {
++  provider: string;
++  category: IntegrationCategory;
++  verticals: IntegrationVertical[];
++  capabilities: string[];
++  execute(request: IntegrationRequest): Promise<IntegrationResult>;
++};
++
++export type IntegrationRegistry = {
++  register(adapter: IntegrationAdapter): void;
++  find(input: {
++    provider?: string;
++    category?: IntegrationCategory;
++    vertical?: IntegrationVertical;
++    capability: string;
++  }): IntegrationAdapter | null;
++  list(): IntegrationAdapter[];
++};
++
++export function createIntegrationRegistry(
++  initialAdapters: IntegrationAdapter[] = []
++): IntegrationRegistry {
++  const adapters = new Map<string, IntegrationAdapter>();
++
++  for (const adapter of initialAdapters) {
++    adapters.set(adapter.provider, adapter);
++  }
++
++  return {
++    register(adapter) {
++      adapters.set(adapter.provider, adapter);
++    },
++    find(input) {
++      return (
++        [...adapters.values()].find(adapter => {
++          if (input.provider && adapter.provider !== input.provider) return false;
++          if (input.category && adapter.category !== input.category) return false;
++          if (input.vertical && !adapter.verticals.includes(input.vertical)) {
++            return false;
++          }
++          return adapter.capabilities.includes(input.capability);
++        }) ?? null
++      );
++    },
++    list() {
++      return [...adapters.values()];
++    },
++  };
++}
++
+diff --git a/src/server/modules/voice/integrations/integrationRouter.ts b/src/server/modules/voice/integrations/integrationRouter.ts
+new file mode 100644
+index 0000000..1fa95b3
+--- /dev/null
++++ b/src/server/modules/voice/integrations/integrationRouter.ts
+@@ -0,0 +1,38 @@
++import type {
++  IntegrationCategory,
++  IntegrationRegistry,
++  IntegrationRequest,
++  IntegrationResult,
++  IntegrationVertical,
++} from './integrationRegistry.js';
++
++export class IntegrationRouteError extends Error {
++  constructor(message: string) {
++    super(message);
++    this.name = 'IntegrationRouteError';
++  }
++}
++
++export async function routeIntegrationRequest(input: {
++  registry: IntegrationRegistry;
++  provider?: string;
++  category?: IntegrationCategory;
++  vertical?: IntegrationVertical;
++  request: IntegrationRequest;
++}): Promise<IntegrationResult> {
++  const adapter = input.registry.find({
++    provider: input.provider,
++    category: input.category,
++    vertical: input.vertical,
++    capability: input.request.capability,
++  });
++
++  if (!adapter) {
++    throw new IntegrationRouteError(
++      `No integration adapter found for capability: ${input.request.capability}`
++    );
++  }
++
++  return adapter.execute(input.request);
++}
++
+diff --git a/src/server/modules/voice/integrations/medical/medicalProvider.ts b/src/server/modules/voice/integrations/medical/medicalProvider.ts
+new file mode 100644
+index 0000000..31e6cb7
+--- /dev/null
++++ b/src/server/modules/voice/integrations/medical/medicalProvider.ts
+@@ -0,0 +1,13 @@
++import type { IntegrationAdapter } from '../integrationRegistry.js';
++
++export type MedicalCapability =
++  | 'create_appointment_request'
++  | 'capture_insurance_intake'
++  | 'answer_office_hours'
++  | 'route_location';
++
++export type MedicalProvider = IntegrationAdapter & {
++  verticals: ['medical'];
++  capabilities: MedicalCapability[];
++};
++
+diff --git a/src/server/modules/voice/integrations/medical/medicalWorkflowCapabilities.ts b/src/server/modules/voice/integrations/medical/medicalWorkflowCapabilities.ts
+new file mode 100644
+index 0000000..603d9f0
+--- /dev/null
++++ b/src/server/modules/voice/integrations/medical/medicalWorkflowCapabilities.ts
+@@ -0,0 +1,7 @@
++export const medicalWorkflowCapabilities = [
++  'create_appointment_request',
++  'capture_insurance_intake',
++  'answer_office_hours',
++  'route_location',
++] as const;
++
+diff --git a/src/server/modules/voice/integrations/medical/tests/medicalWorkflowCapabilities.test.ts b/src/server/modules/voice/integrations/medical/tests/medicalWorkflowCapabilities.test.ts
+new file mode 100644
+index 0000000..d4b3bee
+--- /dev/null
++++ b/src/server/modules/voice/integrations/medical/tests/medicalWorkflowCapabilities.test.ts
+@@ -0,0 +1,14 @@
++import { describe, expect, it } from 'vitest';
++import { medicalWorkflowCapabilities } from '../medicalWorkflowCapabilities.js';
++
++describe('medicalWorkflowCapabilities', () => {
++  it('supports appointment, insurance, office hours, and location routing flows', () => {
++    expect(medicalWorkflowCapabilities).toEqual([
++      'create_appointment_request',
++      'capture_insurance_intake',
++      'answer_office_hours',
++      'route_location',
++    ]);
++  });
++});
++
+diff --git a/src/server/modules/voice/integrations/restaurants/cloverAdapter.ts b/src/server/modules/voice/integrations/restaurants/cloverAdapter.ts
+new file mode 100644
+index 0000000..7478b03
+--- /dev/null
++++ b/src/server/modules/voice/integrations/restaurants/cloverAdapter.ts
+@@ -0,0 +1,7 @@
++import { createUnsupportedRestaurantProvider } from './restaurantReservationProvider.js';
++
++export const cloverAdapter = createUnsupportedRestaurantProvider({
++  provider: 'clover',
++  category: 'pos',
++});
++
+diff --git a/src/server/modules/voice/integrations/restaurants/openTableAdapter.ts b/src/server/modules/voice/integrations/restaurants/openTableAdapter.ts
+new file mode 100644
+index 0000000..3b6f49a
+--- /dev/null
++++ b/src/server/modules/voice/integrations/restaurants/openTableAdapter.ts
+@@ -0,0 +1,7 @@
++import { createUnsupportedRestaurantProvider } from './restaurantReservationProvider.js';
++
++export const openTableAdapter = createUnsupportedRestaurantProvider({
++  provider: 'open_table',
++  category: 'reservation',
++});
++
+diff --git a/src/server/modules/voice/integrations/restaurants/restaurantReservationProvider.ts b/src/server/modules/voice/integrations/restaurants/restaurantReservationProvider.ts
+new file mode 100644
+index 0000000..9d41393
+--- /dev/null
++++ b/src/server/modules/voice/integrations/restaurants/restaurantReservationProvider.ts
+@@ -0,0 +1,47 @@
++import type {
++  IntegrationAdapter,
++  IntegrationRequest,
++  IntegrationResult,
++} from '../integrationRegistry.js';
++
++export type RestaurantCapability =
++  | 'create_reservation'
++  | 'join_waitlist'
++  | 'answer_hours'
++  | 'answer_menu_question'
++  | 'create_catering_request';
++
++export type RestaurantReservationProvider = IntegrationAdapter & {
++  category: 'reservation' | 'pos';
++  capabilities: RestaurantCapability[];
++};
++
++export function createUnsupportedRestaurantProvider(input: {
++  provider: string;
++  category: 'reservation' | 'pos';
++}): RestaurantReservationProvider {
++  return {
++    provider: input.provider,
++    category: input.category,
++    verticals: ['restaurants'],
++    capabilities: [
++      'create_reservation',
++      'join_waitlist',
++      'answer_hours',
++      'answer_menu_question',
++      'create_catering_request',
++    ],
++    async execute(
++      request: IntegrationRequest
++    ): Promise<IntegrationResult> {
++      return {
++        ok: false,
++        provider: input.provider,
++        capability: request.capability,
++        errorMessage: `${input.provider} adapter is not configured yet`,
++        retryable: false,
++      };
++    },
++  };
++}
++
+diff --git a/src/server/modules/voice/integrations/restaurants/sevenRoomsAdapter.ts b/src/server/modules/voice/integrations/restaurants/sevenRoomsAdapter.ts
+new file mode 100644
+index 0000000..2bcfa34
+--- /dev/null
++++ b/src/server/modules/voice/integrations/restaurants/sevenRoomsAdapter.ts
+@@ -0,0 +1,7 @@
++import { createUnsupportedRestaurantProvider } from './restaurantReservationProvider.js';
++
++export const sevenRoomsAdapter = createUnsupportedRestaurantProvider({
++  provider: 'seven_rooms',
++  category: 'reservation',
++});
++
+diff --git a/src/server/modules/voice/integrations/restaurants/squareAdapter.ts b/src/server/modules/voice/integrations/restaurants/squareAdapter.ts
+new file mode 100644
+index 0000000..d557b5e
+--- /dev/null
++++ b/src/server/modules/voice/integrations/restaurants/squareAdapter.ts
+@@ -0,0 +1,7 @@
++import { createUnsupportedRestaurantProvider } from './restaurantReservationProvider.js';
++
++export const squareAdapter = createUnsupportedRestaurantProvider({
++  provider: 'square',
++  category: 'pos',
++});
++
+diff --git a/src/server/modules/voice/integrations/restaurants/tests/restaurantReservationProvider.test.ts b/src/server/modules/voice/integrations/restaurants/tests/restaurantReservationProvider.test.ts
+new file mode 100644
+index 0000000..aec6375
+--- /dev/null
++++ b/src/server/modules/voice/integrations/restaurants/tests/restaurantReservationProvider.test.ts
+@@ -0,0 +1,16 @@
++import { describe, expect, it } from 'vitest';
++import { openTableAdapter } from '../openTableAdapter.js';
++
++describe('restaurant adapters', () => {
++  it('declares restaurant reservation and service capabilities', () => {
++    expect(openTableAdapter.verticals).toEqual(['restaurants']);
++    expect(openTableAdapter.capabilities).toEqual([
++      'create_reservation',
++      'join_waitlist',
++      'answer_hours',
++      'answer_menu_question',
++      'create_catering_request',
++    ]);
++  });
++});
++
+diff --git a/src/server/modules/voice/integrations/restaurants/toastAdapter.ts b/src/server/modules/voice/integrations/restaurants/toastAdapter.ts
+new file mode 100644
+index 0000000..3981be0
+--- /dev/null
++++ b/src/server/modules/voice/integrations/restaurants/toastAdapter.ts
+@@ -0,0 +1,7 @@
++import { createUnsupportedRestaurantProvider } from './restaurantReservationProvider.js';
++
++export const toastAdapter = createUnsupportedRestaurantProvider({
++  provider: 'toast',
++  category: 'pos',
++});
++
+diff --git a/src/server/modules/voice/integrations/salons/salonProvider.ts b/src/server/modules/voice/integrations/salons/salonProvider.ts
+new file mode 100644
+index 0000000..16f1668
+--- /dev/null
++++ b/src/server/modules/voice/integrations/salons/salonProvider.ts
+@@ -0,0 +1,12 @@
++import type { IntegrationAdapter } from '../integrationRegistry.js';
++
++export type SalonCapability =
++  | 'book_appointment'
++  | 'select_stylist'
++  | 'answer_service_pricing';
++
++export type SalonProvider = IntegrationAdapter & {
++  verticals: ['salons'];
++  capabilities: SalonCapability[];
++};
++
+diff --git a/src/server/modules/voice/integrations/salons/salonWorkflowCapabilities.ts b/src/server/modules/voice/integrations/salons/salonWorkflowCapabilities.ts
+new file mode 100644
+index 0000000..419e272
+--- /dev/null
++++ b/src/server/modules/voice/integrations/salons/salonWorkflowCapabilities.ts
+@@ -0,0 +1,6 @@
++export const salonWorkflowCapabilities = [
++  'book_appointment',
++  'select_stylist',
++  'answer_service_pricing',
++] as const;
++
+diff --git a/src/server/modules/voice/integrations/salons/tests/salonWorkflowCapabilities.test.ts b/src/server/modules/voice/integrations/salons/tests/salonWorkflowCapabilities.test.ts
+new file mode 100644
+index 0000000..3b26764
+--- /dev/null
++++ b/src/server/modules/voice/integrations/salons/tests/salonWorkflowCapabilities.test.ts
+@@ -0,0 +1,13 @@
++import { describe, expect, it } from 'vitest';
++import { salonWorkflowCapabilities } from '../salonWorkflowCapabilities.js';
++
++describe('salonWorkflowCapabilities', () => {
++  it('supports booking, stylist selection, and service pricing flows', () => {
++    expect(salonWorkflowCapabilities).toEqual([
++      'book_appointment',
++      'select_stylist',
++      'answer_service_pricing',
++    ]);
++  });
++});
++
+diff --git a/src/server/modules/voice/integrations/tests/integrationRouter.test.ts b/src/server/modules/voice/integrations/tests/integrationRouter.test.ts
+new file mode 100644
+index 0000000..011929e
+--- /dev/null
++++ b/src/server/modules/voice/integrations/tests/integrationRouter.test.ts
+@@ -0,0 +1,78 @@
++import { describe, expect, it } from 'vitest';
++import {
++  createIntegrationRegistry,
++  type IntegrationAdapter,
++} from '../integrationRegistry.js';
++import { routeIntegrationRequest } from '../integrationRouter.js';
++
++const testAdapter: IntegrationAdapter = {
++  provider: 'test_crm',
++  category: 'crm',
++  verticals: ['home_services'],
++  capabilities: ['capture_lead'],
++  async execute(request) {
++    return {
++      ok: true,
++      provider: 'test_crm',
++      capability: request.capability,
++      data: {
++        leadId: 'lead_1',
++        locationId: request.context.locationId,
++      },
++    };
++  },
++};
++
++describe('routeIntegrationRequest', () => {
++  it('routes by provider, vertical, category, and capability', async () => {
++    const registry = createIntegrationRegistry([testAdapter]);
++
++    await expect(
++      routeIntegrationRequest({
++        registry,
++        provider: 'test_crm',
++        category: 'crm',
++        vertical: 'home_services',
++        request: {
++          context: {
++            tenantId: 'tenant_1',
++            businessId: 'business_1',
++            locationId: 'location_1',
++          },
++          capability: 'capture_lead',
++          payload: {
++            name: 'Taylor',
++          },
++        },
++      })
++    ).resolves.toMatchObject({
++      ok: true,
++      provider: 'test_crm',
++      capability: 'capture_lead',
++      data: {
++        locationId: 'location_1',
++      },
++    });
++  });
++
++  it('fails closed when no adapter supports the capability', async () => {
++    const registry = createIntegrationRegistry([]);
++
++    await expect(
++      routeIntegrationRequest({
++        registry,
++        vertical: 'restaurants',
++        request: {
++          context: {
++            tenantId: 'tenant_1',
++            businessId: 'business_1',
++            locationId: 'location_1',
++          },
++          capability: 'create_reservation',
++          payload: {},
++        },
++      })
++    ).rejects.toThrow('No integration adapter found');
++  });
++});
++
+diff --git a/src/server/modules/voice/llm/README.md b/src/server/modules/voice/llm/README.md
+new file mode 100644
+index 0000000..5c8240c
+--- /dev/null
++++ b/src/server/modules/voice/llm/README.md
+@@ -0,0 +1,3 @@
++# llm Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/llm/conversationSummarizer.ts b/src/server/modules/voice/llm/conversationSummarizer.ts
+new file mode 100644
+index 0000000..95e4a5f
+--- /dev/null
++++ b/src/server/modules/voice/llm/conversationSummarizer.ts
+@@ -0,0 +1 @@
++export const conversationSummarizer = 'conversationSummarizer';
+diff --git a/src/server/modules/voice/llm/openAiToolReasoner.ts b/src/server/modules/voice/llm/openAiToolReasoner.ts
+new file mode 100644
+index 0000000..5079141
+--- /dev/null
++++ b/src/server/modules/voice/llm/openAiToolReasoner.ts
+@@ -0,0 +1 @@
++export const openAiToolReasoner = 'openAiToolReasoner';
+diff --git a/src/server/modules/voice/llm/promptBuilder.ts b/src/server/modules/voice/llm/promptBuilder.ts
+new file mode 100644
+index 0000000..a469754
+--- /dev/null
++++ b/src/server/modules/voice/llm/promptBuilder.ts
+@@ -0,0 +1 @@
++export const promptBuilder = 'promptBuilder';
+diff --git a/src/server/modules/voice/llm/voiceReasoningEngine.ts b/src/server/modules/voice/llm/voiceReasoningEngine.ts
+new file mode 100644
+index 0000000..d16516d
+--- /dev/null
++++ b/src/server/modules/voice/llm/voiceReasoningEngine.ts
+@@ -0,0 +1 @@
++export const voiceReasoningEngine = 'voiceReasoningEngine';
+diff --git a/src/server/modules/voice/metrics/latencyMetrics.ts b/src/server/modules/voice/metrics/latencyMetrics.ts
+new file mode 100644
+index 0000000..e7fb771
+--- /dev/null
++++ b/src/server/modules/voice/metrics/latencyMetrics.ts
+@@ -0,0 +1 @@
++export const latencyMetrics = 'latencyMetrics';
+diff --git a/src/server/modules/voice/metrics/voiceMetricsCollector.ts b/src/server/modules/voice/metrics/voiceMetricsCollector.ts
+new file mode 100644
+index 0000000..30b9389
+--- /dev/null
++++ b/src/server/modules/voice/metrics/voiceMetricsCollector.ts
+@@ -0,0 +1 @@
++export const voiceMetricsCollector = 'voiceMetricsCollector';
+diff --git a/src/server/modules/voice/metrics/voiceUsageMetrics.ts b/src/server/modules/voice/metrics/voiceUsageMetrics.ts
+new file mode 100644
+index 0000000..5c2835b
+--- /dev/null
++++ b/src/server/modules/voice/metrics/voiceUsageMetrics.ts
+@@ -0,0 +1 @@
++export const voiceUsageMetrics = 'voiceUsageMetrics';
+diff --git a/src/server/modules/voice/observability/errorReporter.ts b/src/server/modules/voice/observability/errorReporter.ts
+new file mode 100644
+index 0000000..60204d6
+--- /dev/null
++++ b/src/server/modules/voice/observability/errorReporter.ts
+@@ -0,0 +1 @@
++export const errorReporter = 'errorReporter';
+diff --git a/src/server/modules/voice/observability/latencyReporter.ts b/src/server/modules/voice/observability/latencyReporter.ts
+new file mode 100644
+index 0000000..fe3324c
+--- /dev/null
++++ b/src/server/modules/voice/observability/latencyReporter.ts
+@@ -0,0 +1 @@
++export const latencyReporter = 'latencyReporter';
+diff --git a/src/server/modules/voice/observability/logger.ts b/src/server/modules/voice/observability/logger.ts
+new file mode 100644
+index 0000000..51cb99a
+--- /dev/null
++++ b/src/server/modules/voice/observability/logger.ts
+@@ -0,0 +1,22 @@
++import type { TenantScope } from '../runtime/tenantScope.js';
++
++export type VoiceLogLevel = 'debug' | 'info' | 'warn' | 'error';
++
++export type VoiceLogger = {
++  log(input: {
++    level: VoiceLogLevel;
++    message: string;
++    scope?: TenantScope;
++    metadata?: Record<string, unknown>;
++  }): void;
++};
++
++export const consoleVoiceLogger: VoiceLogger = {
++  log(input) {
++    const payload = {
++      scope: input.scope,
++      metadata: input.metadata,
++    };
++    console[input.level](`[voice] ${input.message}`, payload);
++  },
++};
+diff --git a/src/server/modules/voice/observability/providerHealthReporter.ts b/src/server/modules/voice/observability/providerHealthReporter.ts
+new file mode 100644
+index 0000000..7e2653b
+--- /dev/null
++++ b/src/server/modules/voice/observability/providerHealthReporter.ts
+@@ -0,0 +1 @@
++export const providerHealthReporter = 'providerHealthReporter';
+diff --git a/src/server/modules/voice/observability/traceContext.ts b/src/server/modules/voice/observability/traceContext.ts
+new file mode 100644
+index 0000000..ed5e871
+--- /dev/null
++++ b/src/server/modules/voice/observability/traceContext.ts
+@@ -0,0 +1 @@
++export const traceContext = 'traceContext';
+diff --git a/src/server/modules/voice/orchestrator/README.md b/src/server/modules/voice/orchestrator/README.md
+new file mode 100644
+index 0000000..7a63bda
+--- /dev/null
++++ b/src/server/modules/voice/orchestrator/README.md
+@@ -0,0 +1,3 @@
++# orchestrator Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/orchestrator/liveVoiceOrchestrator.ts b/src/server/modules/voice/orchestrator/liveVoiceOrchestrator.ts
+new file mode 100644
+index 0000000..a95e5d0
+--- /dev/null
++++ b/src/server/modules/voice/orchestrator/liveVoiceOrchestrator.ts
+@@ -0,0 +1 @@
++export const liveVoiceOrchestrator = 'liveVoiceOrchestrator';
+diff --git a/src/server/modules/voice/persistence/adapters/memory/memoryAnalyticsStore.ts b/src/server/modules/voice/persistence/adapters/memory/memoryAnalyticsStore.ts
+new file mode 100644
+index 0000000..8af51ee
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/memory/memoryAnalyticsStore.ts
+@@ -0,0 +1 @@
++export const memoryAnalyticsStore = 'memoryAnalyticsStore';
+diff --git a/src/server/modules/voice/persistence/adapters/memory/memoryBusinessKnowledgeStore.ts b/src/server/modules/voice/persistence/adapters/memory/memoryBusinessKnowledgeStore.ts
+new file mode 100644
+index 0000000..bc58e58
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/memory/memoryBusinessKnowledgeStore.ts
+@@ -0,0 +1 @@
++export const memoryBusinessKnowledgeStore = 'memoryBusinessKnowledgeStore';
+diff --git a/src/server/modules/voice/persistence/adapters/memory/memoryConversationStore.ts b/src/server/modules/voice/persistence/adapters/memory/memoryConversationStore.ts
+new file mode 100644
+index 0000000..eefac43
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/memory/memoryConversationStore.ts
+@@ -0,0 +1 @@
++export const memoryConversationStore = 'memoryConversationStore';
+diff --git a/src/server/modules/voice/persistence/adapters/memory/memoryLeadStore.ts b/src/server/modules/voice/persistence/adapters/memory/memoryLeadStore.ts
+new file mode 100644
+index 0000000..69ddeb3
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/memory/memoryLeadStore.ts
+@@ -0,0 +1 @@
++export const memoryLeadStore = 'memoryLeadStore';
+diff --git a/src/server/modules/voice/persistence/adapters/memory/memoryPersistenceAdapter.ts b/src/server/modules/voice/persistence/adapters/memory/memoryPersistenceAdapter.ts
+new file mode 100644
+index 0000000..d1a7308
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/memory/memoryPersistenceAdapter.ts
+@@ -0,0 +1,132 @@
++import type {
++  ConversationTurn,
++  RuntimeEvent,
++  ToolExecution,
++  TranscriptSegment,
++  VoiceCall,
++  VoiceLead,
++  VoicePersistenceAdapter,
++  VoiceSession,
++} from '../persistenceAdapter.js';
++
++function id(prefix: string): string {
++  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
++}
++
++export function createMemoryVoicePersistenceAdapter(): VoicePersistenceAdapter {
++  const calls = new Map<string, VoiceCall>();
++  const sessions = new Map<string, VoiceSession>();
++  const turns: ConversationTurn[] = [];
++  const segments: TranscriptSegment[] = [];
++  const leads = new Map<string, VoiceLead>();
++  const events: RuntimeEvent[] = [];
++  const toolExecutions = new Map<string, ToolExecution>();
++
++  return {
++    calls: {
++      async createCall(call) {
++        const created = { ...call, id: id('call') };
++        calls.set(created.id, created);
++        return created;
++      },
++      async updateCall(call) {
++        calls.set(call.id, call);
++        return call;
++      },
++      async findCallByProviderCallId(providerCallId) {
++        return [...calls.values()].find(call => call.providerCallId === providerCallId) ?? null;
++      },
++    },
++    sessions: {
++      async createSession(session) {
++        const now = new Date();
++        const created = { ...session, id: id('session'), createdAt: now, updatedAt: now };
++        sessions.set(created.id, created);
++        return created;
++      },
++      async findSession(sessionId) {
++        return sessions.get(sessionId) ?? null;
++      },
++      async findSessionByProviderCallId(providerCallId) {
++        return [...sessions.values()].find(session => session.providerCallId === providerCallId) ?? null;
++      },
++      async findSessionByStreamId(streamId) {
++        return [...sessions.values()].find(session => session.streamId === streamId) ?? null;
++      },
++      async countActiveSessions(input) {
++        return [...sessions.values()].filter(session => {
++          const active =
++            session.status === 'starting' ||
++            session.status === 'active' ||
++            session.status === 'recovering';
++          if (!active) return false;
++          if (session.tenantId !== input.tenantId) return false;
++          if (input.businessId && session.businessId !== input.businessId) {
++            return false;
++          }
++          if (input.locationId && session.locationId !== input.locationId) {
++            return false;
++          }
++          return true;
++        }).length;
++      },
++      async updateSession(session) {
++        const updated = { ...session, updatedAt: new Date() };
++        sessions.set(updated.id, updated);
++        return updated;
++      },
++    },
++    conversations: {
++      async appendTurn(turn) {
++        const created = { ...turn, id: id('turn'), createdAt: new Date() };
++        turns.push(created);
++        return created;
++      },
++      async listTurns(sessionId) {
++        return turns.filter(turn => turn.sessionId === sessionId);
++      },
++    },
++    transcripts: {
++      async appendSegment(segment) {
++        const created = { ...segment, id: id('transcript'), createdAt: new Date() };
++        segments.push(created);
++        return created;
++      },
++      async listSegments(callId) {
++        return segments.filter(segment => segment.callId === callId);
++      },
++      async finalizeTranscript() {},
++    },
++    leads: {
++      async createLead(lead) {
++        const now = new Date();
++        const created = { ...lead, id: id('lead'), createdAt: now, updatedAt: now };
++        leads.set(created.id, created);
++        return created;
++      },
++      async updateLead(lead) {
++        const updated = { ...lead, updatedAt: new Date() };
++        leads.set(updated.id, updated);
++        return updated;
++      },
++    },
++    events: {
++      async recordRuntimeEvent(event) {
++        const created = { ...event, id: id('event'), createdAt: new Date() };
++        events.push(created);
++        return created;
++      },
++    },
++    toolExecutions: {
++      async createToolExecution(execution) {
++        const created = { ...execution, id: id('tool'), createdAt: new Date() };
++        toolExecutions.set(created.id, created);
++        return created;
++      },
++      async updateToolExecution(execution) {
++        toolExecutions.set(execution.id, execution);
++        return execution;
++      },
++    },
++  };
++}
+diff --git a/src/server/modules/voice/persistence/adapters/memory/memoryTranscriptStore.ts b/src/server/modules/voice/persistence/adapters/memory/memoryTranscriptStore.ts
+new file mode 100644
+index 0000000..0e49e37
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/memory/memoryTranscriptStore.ts
+@@ -0,0 +1 @@
++export const memoryTranscriptStore = 'memoryTranscriptStore';
+diff --git a/src/server/modules/voice/persistence/adapters/persistenceAdapter.ts b/src/server/modules/voice/persistence/adapters/persistenceAdapter.ts
+new file mode 100644
+index 0000000..e7b782f
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/persistenceAdapter.ts
+@@ -0,0 +1,147 @@
++import type { VoiceRuntimeConfig } from '../../config/providerVoiceConfigResolver.js';
++
++export type VoiceCall = {
++  id: string;
++  tenantId: string;
++  businessId: string;
++  locationId: string;
++  providerCallId?: string;
++  fromNumber?: string;
++  toNumber: string;
++  status: 'queued' | 'in_progress' | 'completed' | 'failed' | 'canceled';
++  startedAt?: Date;
++  endedAt?: Date;
++};
++
++export type VoiceSession = {
++  id: string;
++  callId: string;
++  tenantId: string;
++  businessId: string;
++  locationId: string;
++  providerCallId?: string;
++  streamId?: string;
++  status: 'starting' | 'active' | 'recovering' | 'ended';
++  config: VoiceRuntimeConfig;
++  createdAt: Date;
++  updatedAt: Date;
++};
++
++export type ConversationTurn = {
++  id: string;
++  sessionId: string;
++  callId: string;
++  role: 'caller' | 'assistant' | 'system' | 'tool';
++  content: string;
++  createdAt: Date;
++  metadata?: Record<string, unknown>;
++};
++
++export type TranscriptSegment = {
++  id: string;
++  sessionId: string;
++  callId: string;
++  speaker: 'caller' | 'assistant';
++  text: string;
++  isFinal: boolean;
++  confidence?: number;
++  createdAt: Date;
++};
++
++export type VoiceLead = {
++  id: string;
++  tenantId: string;
++  businessId: string;
++  locationId: string;
++  callId?: string;
++  sessionId?: string;
++  name?: string;
++  phone?: string;
++  email?: string;
++  address?: string;
++  service?: string;
++  status: 'new' | 'contacted' | 'converted' | 'lost';
++  createdAt: Date;
++  updatedAt: Date;
++};
++
++export type RuntimeEvent = {
++  id: string;
++  tenantId: string;
++  businessId: string;
++  locationId: string;
++  callId?: string;
++  sessionId?: string;
++  severity: 'debug' | 'info' | 'warn' | 'error';
++  type: string;
++  message: string;
++  metadata?: Record<string, unknown>;
++  createdAt: Date;
++};
++
++export type ToolExecution = {
++  id: string;
++  sessionId: string;
++  callId: string;
++  toolName: string;
++  status: 'pending' | 'completed' | 'failed';
++  request: Record<string, unknown>;
++  response?: Record<string, unknown>;
++  errorMessage?: string;
++  createdAt: Date;
++  completedAt?: Date;
++};
++
++export type VoiceCallStore = {
++  createCall(call: Omit<VoiceCall, 'id'>): Promise<VoiceCall>;
++  updateCall(call: VoiceCall): Promise<VoiceCall>;
++  findCallByProviderCallId(providerCallId: string): Promise<VoiceCall | null>;
++};
++
++export type VoiceSessionStore = {
++  createSession(session: Omit<VoiceSession, 'id' | 'createdAt' | 'updatedAt'>): Promise<VoiceSession>;
++  findSession(sessionId: string): Promise<VoiceSession | null>;
++  findSessionByProviderCallId(providerCallId: string): Promise<VoiceSession | null>;
++  findSessionByStreamId(streamId: string): Promise<VoiceSession | null>;
++  countActiveSessions(input: {
++    tenantId: string;
++    businessId?: string;
++    locationId?: string;
++  }): Promise<number>;
++  updateSession(session: VoiceSession): Promise<VoiceSession>;
++};
++
++export type VoiceConversationStore = {
++  appendTurn(turn: Omit<ConversationTurn, 'id' | 'createdAt'>): Promise<ConversationTurn>;
++  listTurns(sessionId: string): Promise<ConversationTurn[]>;
++};
++
++export type VoiceTranscriptStore = {
++  appendSegment(segment: Omit<TranscriptSegment, 'id' | 'createdAt'>): Promise<TranscriptSegment>;
++  listSegments(callId: string): Promise<TranscriptSegment[]>;
++  finalizeTranscript(callId: string): Promise<void>;
++};
++
++export type VoiceLeadStore = {
++  createLead(lead: Omit<VoiceLead, 'id' | 'createdAt' | 'updatedAt'>): Promise<VoiceLead>;
++  updateLead(lead: VoiceLead): Promise<VoiceLead>;
++};
++
++export type VoiceEventStore = {
++  recordRuntimeEvent(event: Omit<RuntimeEvent, 'id' | 'createdAt'>): Promise<RuntimeEvent>;
++};
++
++export type VoiceToolExecutionStore = {
++  createToolExecution(execution: Omit<ToolExecution, 'id' | 'createdAt' | 'completedAt'>): Promise<ToolExecution>;
++  updateToolExecution(execution: ToolExecution): Promise<ToolExecution>;
++};
++
++export type VoicePersistenceAdapter = {
++  calls: VoiceCallStore;
++  sessions: VoiceSessionStore;
++  conversations: VoiceConversationStore;
++  transcripts: VoiceTranscriptStore;
++  leads: VoiceLeadStore;
++  events: VoiceEventStore;
++  toolExecutions: VoiceToolExecutionStore;
++};
+diff --git a/src/server/modules/voice/persistence/adapters/redis/redisCallMappingStore.ts b/src/server/modules/voice/persistence/adapters/redis/redisCallMappingStore.ts
+new file mode 100644
+index 0000000..236a18a
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/redis/redisCallMappingStore.ts
+@@ -0,0 +1 @@
++export const redisCallMappingStore = 'redisCallMappingStore';
+diff --git a/src/server/modules/voice/persistence/adapters/redis/redisEventQueue.ts b/src/server/modules/voice/persistence/adapters/redis/redisEventQueue.ts
+new file mode 100644
+index 0000000..064db62
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/redis/redisEventQueue.ts
+@@ -0,0 +1 @@
++export const redisEventQueue = 'redisEventQueue';
+diff --git a/src/server/modules/voice/persistence/adapters/redis/redisLockStore.ts b/src/server/modules/voice/persistence/adapters/redis/redisLockStore.ts
+new file mode 100644
+index 0000000..e455755
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/redis/redisLockStore.ts
+@@ -0,0 +1 @@
++export const redisLockStore = 'redisLockStore';
+diff --git a/src/server/modules/voice/persistence/adapters/redis/redisSessionStateStore.ts b/src/server/modules/voice/persistence/adapters/redis/redisSessionStateStore.ts
+new file mode 100644
+index 0000000..26558e7
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/redis/redisSessionStateStore.ts
+@@ -0,0 +1 @@
++export const redisSessionStateStore = 'redisSessionStateStore';
+diff --git a/src/server/modules/voice/persistence/adapters/redis/redisStreamMappingStore.ts b/src/server/modules/voice/persistence/adapters/redis/redisStreamMappingStore.ts
+new file mode 100644
+index 0000000..484b1d4
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/redis/redisStreamMappingStore.ts
+@@ -0,0 +1 @@
++export const redisStreamMappingStore = 'redisStreamMappingStore';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabaseAnalyticsStore.ts b/src/server/modules/voice/persistence/adapters/supabase/supabaseAnalyticsStore.ts
+new file mode 100644
+index 0000000..176ab3c
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabaseAnalyticsStore.ts
+@@ -0,0 +1 @@
++export const supabaseAnalyticsStore = 'supabaseAnalyticsStore';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabaseBusinessKnowledgeStore.ts b/src/server/modules/voice/persistence/adapters/supabase/supabaseBusinessKnowledgeStore.ts
+new file mode 100644
+index 0000000..26f7042
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabaseBusinessKnowledgeStore.ts
+@@ -0,0 +1 @@
++export const supabaseBusinessKnowledgeStore = 'supabaseBusinessKnowledgeStore';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabaseCallStateStore.ts b/src/server/modules/voice/persistence/adapters/supabase/supabaseCallStateStore.ts
+new file mode 100644
+index 0000000..e10affa
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabaseCallStateStore.ts
+@@ -0,0 +1 @@
++export const supabaseCallStateStore = 'supabaseCallStateStore';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabaseConversationStore.ts b/src/server/modules/voice/persistence/adapters/supabase/supabaseConversationStore.ts
+new file mode 100644
+index 0000000..3d63baf
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabaseConversationStore.ts
+@@ -0,0 +1 @@
++export const supabaseConversationStore = 'supabaseConversationStore';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabaseLeadStore.ts b/src/server/modules/voice/persistence/adapters/supabase/supabaseLeadStore.ts
+new file mode 100644
+index 0000000..243c503
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabaseLeadStore.ts
+@@ -0,0 +1 @@
++export const supabaseLeadStore = 'supabaseLeadStore';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabasePersistenceAdapter.ts b/src/server/modules/voice/persistence/adapters/supabase/supabasePersistenceAdapter.ts
+new file mode 100644
+index 0000000..36afde4
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabasePersistenceAdapter.ts
+@@ -0,0 +1 @@
++export const supabasePersistenceAdapter = 'supabasePersistenceAdapter';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabaseProviderConfigStore.ts b/src/server/modules/voice/persistence/adapters/supabase/supabaseProviderConfigStore.ts
+new file mode 100644
+index 0000000..4f5e22e
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabaseProviderConfigStore.ts
+@@ -0,0 +1 @@
++export const supabaseProviderConfigStore = 'supabaseProviderConfigStore';
+diff --git a/src/server/modules/voice/persistence/adapters/supabase/supabaseTranscriptStore.ts b/src/server/modules/voice/persistence/adapters/supabase/supabaseTranscriptStore.ts
+new file mode 100644
+index 0000000..ab9b489
+--- /dev/null
++++ b/src/server/modules/voice/persistence/adapters/supabase/supabaseTranscriptStore.ts
+@@ -0,0 +1 @@
++export const supabaseTranscriptStore = 'supabaseTranscriptStore';
+diff --git a/src/server/modules/voice/persistence/realtimeAnalyticsStore.ts b/src/server/modules/voice/persistence/realtimeAnalyticsStore.ts
+new file mode 100644
+index 0000000..45e4315
+--- /dev/null
++++ b/src/server/modules/voice/persistence/realtimeAnalyticsStore.ts
+@@ -0,0 +1,2 @@
++export type { VoiceEventStore as RealtimeAnalyticsStore } from './adapters/persistenceAdapter.js';
++
+diff --git a/src/server/modules/voice/persistence/realtimeCallStateStore.ts b/src/server/modules/voice/persistence/realtimeCallStateStore.ts
+new file mode 100644
+index 0000000..5d3a23d
+--- /dev/null
++++ b/src/server/modules/voice/persistence/realtimeCallStateStore.ts
+@@ -0,0 +1,5 @@
++export type {
++  VoiceCallStore as RealtimeCallStore,
++  VoiceSessionStore as RealtimeSessionStore,
++} from './adapters/persistenceAdapter.js';
++
+diff --git a/src/server/modules/voice/persistence/realtimeConversationStore.ts b/src/server/modules/voice/persistence/realtimeConversationStore.ts
+new file mode 100644
+index 0000000..06d6e16
+--- /dev/null
++++ b/src/server/modules/voice/persistence/realtimeConversationStore.ts
+@@ -0,0 +1,2 @@
++export type { VoiceConversationStore as RealtimeConversationStore } from './adapters/persistenceAdapter.js';
++
+diff --git a/src/server/modules/voice/persistence/realtimeLeadStore.ts b/src/server/modules/voice/persistence/realtimeLeadStore.ts
+new file mode 100644
+index 0000000..fbaff70
+--- /dev/null
++++ b/src/server/modules/voice/persistence/realtimeLeadStore.ts
+@@ -0,0 +1,2 @@
++export type { VoiceLeadStore as RealtimeLeadStore } from './adapters/persistenceAdapter.js';
++
+diff --git a/src/server/modules/voice/persistence/realtimeTranscriptStore.ts b/src/server/modules/voice/persistence/realtimeTranscriptStore.ts
+new file mode 100644
+index 0000000..e0f0d5c
+--- /dev/null
++++ b/src/server/modules/voice/persistence/realtimeTranscriptStore.ts
+@@ -0,0 +1,2 @@
++export type { VoiceTranscriptStore as RealtimeTranscriptStore } from './adapters/persistenceAdapter.js';
++
+diff --git a/src/server/modules/voice/providers/cartesia/cartesiaClient.ts b/src/server/modules/voice/providers/cartesia/cartesiaClient.ts
+new file mode 100644
+index 0000000..eb40e6d
+--- /dev/null
++++ b/src/server/modules/voice/providers/cartesia/cartesiaClient.ts
+@@ -0,0 +1 @@
++export const cartesiaClient = 'cartesiaClient';
+diff --git a/src/server/modules/voice/providers/cartesia/cartesiaTtsProvider.ts b/src/server/modules/voice/providers/cartesia/cartesiaTtsProvider.ts
+new file mode 100644
+index 0000000..20901ee
+--- /dev/null
++++ b/src/server/modules/voice/providers/cartesia/cartesiaTtsProvider.ts
+@@ -0,0 +1 @@
++export const cartesiaTtsProvider = 'cartesiaTtsProvider';
+diff --git a/src/server/modules/voice/providers/deepgram/deepgramClient.ts b/src/server/modules/voice/providers/deepgram/deepgramClient.ts
+new file mode 100644
+index 0000000..9ff1c22
+--- /dev/null
++++ b/src/server/modules/voice/providers/deepgram/deepgramClient.ts
+@@ -0,0 +1 @@
++export const deepgramClient = 'deepgramClient';
+diff --git a/src/server/modules/voice/providers/deepgram/deepgramConnectionManager.ts b/src/server/modules/voice/providers/deepgram/deepgramConnectionManager.ts
+new file mode 100644
+index 0000000..24eb734
+--- /dev/null
++++ b/src/server/modules/voice/providers/deepgram/deepgramConnectionManager.ts
+@@ -0,0 +1 @@
++export const deepgramConnectionManager = 'deepgramConnectionManager';
+diff --git a/src/server/modules/voice/providers/deepgram/deepgramErrorMapper.ts b/src/server/modules/voice/providers/deepgram/deepgramErrorMapper.ts
+new file mode 100644
+index 0000000..72091c4
+--- /dev/null
++++ b/src/server/modules/voice/providers/deepgram/deepgramErrorMapper.ts
+@@ -0,0 +1 @@
++export const deepgramErrorMapper = 'deepgramErrorMapper';
+diff --git a/src/server/modules/voice/providers/deepgram/deepgramRealtimeSocket.ts b/src/server/modules/voice/providers/deepgram/deepgramRealtimeSocket.ts
+new file mode 100644
+index 0000000..f3e5b3f
+--- /dev/null
++++ b/src/server/modules/voice/providers/deepgram/deepgramRealtimeSocket.ts
+@@ -0,0 +1 @@
++export const deepgramRealtimeSocket = 'deepgramRealtimeSocket';
+diff --git a/src/server/modules/voice/providers/deepgram/deepgramRuntimeBridge.ts b/src/server/modules/voice/providers/deepgram/deepgramRuntimeBridge.ts
+new file mode 100644
+index 0000000..f12d839
+--- /dev/null
++++ b/src/server/modules/voice/providers/deepgram/deepgramRuntimeBridge.ts
+@@ -0,0 +1 @@
++export const deepgramRuntimeBridge = 'deepgramRuntimeBridge';
+diff --git a/src/server/modules/voice/providers/deepgram/deepgramTranscriptParser.ts b/src/server/modules/voice/providers/deepgram/deepgramTranscriptParser.ts
+new file mode 100644
+index 0000000..ea4e482
+--- /dev/null
++++ b/src/server/modules/voice/providers/deepgram/deepgramTranscriptParser.ts
+@@ -0,0 +1 @@
++export const deepgramTranscriptParser = 'deepgramTranscriptParser';
+diff --git a/src/server/modules/voice/providers/elevenlabs/elevenLabsClient.ts b/src/server/modules/voice/providers/elevenlabs/elevenLabsClient.ts
+new file mode 100644
+index 0000000..dd98418
+--- /dev/null
++++ b/src/server/modules/voice/providers/elevenlabs/elevenLabsClient.ts
+@@ -0,0 +1 @@
++export const elevenLabsClient = 'elevenLabsClient';
+diff --git a/src/server/modules/voice/providers/elevenlabs/elevenLabsTtsProvider.ts b/src/server/modules/voice/providers/elevenlabs/elevenLabsTtsProvider.ts
+new file mode 100644
+index 0000000..312a5ad
+--- /dev/null
++++ b/src/server/modules/voice/providers/elevenlabs/elevenLabsTtsProvider.ts
+@@ -0,0 +1 @@
++export const elevenLabsTtsProvider = 'elevenLabsTtsProvider';
+diff --git a/src/server/modules/voice/providers/openai/openAiClient.ts b/src/server/modules/voice/providers/openai/openAiClient.ts
+new file mode 100644
+index 0000000..0efe43f
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/openAiClient.ts
+@@ -0,0 +1 @@
++export const openAiClient = 'openAiClient';
+diff --git a/src/server/modules/voice/providers/openai/openAiErrorMapper.ts b/src/server/modules/voice/providers/openai/openAiErrorMapper.ts
+new file mode 100644
+index 0000000..0c562a3
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/openAiErrorMapper.ts
+@@ -0,0 +1 @@
++export const openAiErrorMapper = 'openAiErrorMapper';
+diff --git a/src/server/modules/voice/providers/openai/openAiResponseAdapter.ts b/src/server/modules/voice/providers/openai/openAiResponseAdapter.ts
+new file mode 100644
+index 0000000..7c93c1b
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/openAiResponseAdapter.ts
+@@ -0,0 +1 @@
++export const openAiResponseAdapter = 'openAiResponseAdapter';
+diff --git a/src/server/modules/voice/providers/openai/realtime/openAiRealtimeConversation.ts b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeConversation.ts
+new file mode 100644
+index 0000000..1531e75
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeConversation.ts
+@@ -0,0 +1 @@
++export const openAiRealtimeConversation = 'openAiRealtimeConversation';
+diff --git a/src/server/modules/voice/providers/openai/realtime/openAiRealtimeFailoverManager.ts b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeFailoverManager.ts
+new file mode 100644
+index 0000000..ce73612
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeFailoverManager.ts
+@@ -0,0 +1 @@
++export const openAiRealtimeFailoverManager = 'openAiRealtimeFailoverManager';
+diff --git a/src/server/modules/voice/providers/openai/realtime/openAiRealtimeHeartbeat.ts b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeHeartbeat.ts
+new file mode 100644
+index 0000000..edb0261
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeHeartbeat.ts
+@@ -0,0 +1 @@
++export const openAiRealtimeHeartbeat = 'openAiRealtimeHeartbeat';
+diff --git a/src/server/modules/voice/providers/openai/realtime/openAiRealtimeRecoveryManager.ts b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeRecoveryManager.ts
+new file mode 100644
+index 0000000..52629cb
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeRecoveryManager.ts
+@@ -0,0 +1 @@
++export const openAiRealtimeRecoveryManager = 'openAiRealtimeRecoveryManager';
+diff --git a/src/server/modules/voice/providers/openai/realtime/openAiRealtimeSessionManager.ts b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeSessionManager.ts
+new file mode 100644
+index 0000000..b3a5273
+--- /dev/null
++++ b/src/server/modules/voice/providers/openai/realtime/openAiRealtimeSessionManager.ts
+@@ -0,0 +1 @@
++export const openAiRealtimeSessionManager = 'openAiRealtimeSessionManager';
+diff --git a/src/server/modules/voice/providers/providerConfig.ts b/src/server/modules/voice/providers/providerConfig.ts
+new file mode 100644
+index 0000000..cd65acd
+--- /dev/null
++++ b/src/server/modules/voice/providers/providerConfig.ts
+@@ -0,0 +1,79 @@
++import type { VoiceRuntimeConfig } from '../config/providerVoiceConfigResolver.js';
++
++export type {
++  VoiceProviderConfig,
++  VoiceProviderName,
++} from '../config/providerVoiceConfigResolver.js';
++
++export type TelephonyInboundCall = {
++  providerCallId: string;
++  fromNumber?: string;
++  toNumber: string;
++  raw: Record<string, unknown>;
++};
++
++export type MediaStreamEvent = {
++  providerCallId?: string;
++  streamId: string;
++  event: 'start' | 'media' | 'stop' | 'mark';
++  payload?: string;
++  raw: Record<string, unknown>;
++};
++
++export type SttTranscript = {
++  text: string;
++  isFinal: boolean;
++  confidence?: number;
++};
++
++export type LlmResponse = {
++  text: string;
++  intent: 'pricing' | 'booking' | 'lead' | 'support' | 'emergency' | 'general';
++  toolRequests: Array<{
++    toolName: string;
++    payload: Record<string, unknown>;
++  }>;
++};
++
++export type TtsAudioChunk = {
++  audioBase64: string;
++  format: 'mulaw' | 'mp3' | 'wav' | 'pcm';
++};
++
++export type TelephonyProvider = {
++  parseInboundCall(raw: Record<string, unknown>): TelephonyInboundCall;
++  parseMediaStreamEvent(raw: Record<string, unknown>): MediaStreamEvent;
++  buildConnectMediaStreamResponse(input: {
++    call: TelephonyInboundCall;
++    streamUrl: string;
++  }): string;
++};
++
++export type SttProvider = {
++  transcribeAudio(input: {
++    config: VoiceRuntimeConfig;
++    audioBase64: string;
++  }): Promise<SttTranscript | null>;
++};
++
++export type LlmProvider = {
++  generateResponse(input: {
++    config: VoiceRuntimeConfig;
++    sessionId: string;
++    transcript: string;
++  }): Promise<LlmResponse>;
++};
++
++export type TtsProvider = {
++  synthesize(input: {
++    config: VoiceRuntimeConfig;
++    text: string;
++  }): Promise<TtsAudioChunk>;
++};
++
++export type VoiceProviderRegistry = {
++  telephony: TelephonyProvider;
++  stt: SttProvider;
++  llm: LlmProvider;
++  tts: TtsProvider;
++};
+diff --git a/src/server/modules/voice/providers/providerErrors.ts b/src/server/modules/voice/providers/providerErrors.ts
+new file mode 100644
+index 0000000..ff9f256
+--- /dev/null
++++ b/src/server/modules/voice/providers/providerErrors.ts
+@@ -0,0 +1,11 @@
++export class VoiceProviderError extends Error {
++  constructor(
++    message: string,
++    readonly provider: string,
++    readonly retryable: boolean
++  ) {
++    super(message);
++    this.name = 'VoiceProviderError';
++  }
++}
++
+diff --git a/src/server/modules/voice/providers/providerHealth.ts b/src/server/modules/voice/providers/providerHealth.ts
+new file mode 100644
+index 0000000..b5154ef
+--- /dev/null
++++ b/src/server/modules/voice/providers/providerHealth.ts
+@@ -0,0 +1,7 @@
++export type ProviderHealth = {
++  provider: string;
++  ok: boolean;
++  latencyMs?: number;
++  checkedAt: Date;
++  message?: string;
++};
+diff --git a/src/server/modules/voice/providers/signalwire/signalWireCallRouter.ts b/src/server/modules/voice/providers/signalwire/signalWireCallRouter.ts
+new file mode 100644
+index 0000000..a29a68e
+--- /dev/null
++++ b/src/server/modules/voice/providers/signalwire/signalWireCallRouter.ts
+@@ -0,0 +1 @@
++export const signalWireCallRouter = 'signalWireCallRouter';
+diff --git a/src/server/modules/voice/providers/signalwire/signalWireInboundMediaBridge.ts b/src/server/modules/voice/providers/signalwire/signalWireInboundMediaBridge.ts
+new file mode 100644
+index 0000000..3d53d5a
+--- /dev/null
++++ b/src/server/modules/voice/providers/signalwire/signalWireInboundMediaBridge.ts
+@@ -0,0 +1 @@
++export const signalWireInboundMediaBridge = 'signalWireInboundMediaBridge';
+diff --git a/src/server/modules/voice/providers/signalwire/signalWireOutboundAudioBridge.ts b/src/server/modules/voice/providers/signalwire/signalWireOutboundAudioBridge.ts
+new file mode 100644
+index 0000000..38a447f
+--- /dev/null
++++ b/src/server/modules/voice/providers/signalwire/signalWireOutboundAudioBridge.ts
+@@ -0,0 +1 @@
++export const signalWireOutboundAudioBridge = 'signalWireOutboundAudioBridge';
+diff --git a/src/server/modules/voice/providers/signalwire/signalWireOutboundChunker.ts b/src/server/modules/voice/providers/signalwire/signalWireOutboundChunker.ts
+new file mode 100644
+index 0000000..18f5b78
+--- /dev/null
++++ b/src/server/modules/voice/providers/signalwire/signalWireOutboundChunker.ts
+@@ -0,0 +1 @@
++export const signalWireOutboundChunker = 'signalWireOutboundChunker';
+diff --git a/src/server/modules/voice/providers/signalwire/signalWireOutboundQueue.ts b/src/server/modules/voice/providers/signalwire/signalWireOutboundQueue.ts
+new file mode 100644
+index 0000000..28b7fce
+--- /dev/null
++++ b/src/server/modules/voice/providers/signalwire/signalWireOutboundQueue.ts
+@@ -0,0 +1 @@
++export const signalWireOutboundQueue = 'signalWireOutboundQueue';
+diff --git a/src/server/modules/voice/providers/signalwire/signalWirePlaybackState.ts b/src/server/modules/voice/providers/signalwire/signalWirePlaybackState.ts
+new file mode 100644
+index 0000000..b5c2443
+--- /dev/null
++++ b/src/server/modules/voice/providers/signalwire/signalWirePlaybackState.ts
+@@ -0,0 +1 @@
++export const signalWirePlaybackState = 'signalWirePlaybackState';
+diff --git a/src/server/modules/voice/providers/signalwire/signalWireWebhookVerifier.ts b/src/server/modules/voice/providers/signalwire/signalWireWebhookVerifier.ts
+new file mode 100644
+index 0000000..421f631
+--- /dev/null
++++ b/src/server/modules/voice/providers/signalwire/signalWireWebhookVerifier.ts
+@@ -0,0 +1 @@
++export const signalWireWebhookVerifier = 'signalWireWebhookVerifier';
+diff --git a/src/server/modules/voice/reasoning/README.md b/src/server/modules/voice/reasoning/README.md
+new file mode 100644
+index 0000000..e0fd7c9
+--- /dev/null
++++ b/src/server/modules/voice/reasoning/README.md
+@@ -0,0 +1,3 @@
++# reasoning Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/runtime/liveConversationRuntimeState.ts b/src/server/modules/voice/runtime/liveConversationRuntimeState.ts
+new file mode 100644
+index 0000000..7802ebf
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveConversationRuntimeState.ts
+@@ -0,0 +1 @@
++export const liveConversationRuntimeState = 'liveConversationRuntimeState';
+diff --git a/src/server/modules/voice/runtime/liveRuntimeAnalyticsPipeline.ts b/src/server/modules/voice/runtime/liveRuntimeAnalyticsPipeline.ts
+new file mode 100644
+index 0000000..58638ef
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeAnalyticsPipeline.ts
+@@ -0,0 +1 @@
++export const liveRuntimeAnalyticsPipeline = 'liveRuntimeAnalyticsPipeline';
+diff --git a/src/server/modules/voice/runtime/liveRuntimeConcurrencyGuard.ts b/src/server/modules/voice/runtime/liveRuntimeConcurrencyGuard.ts
+new file mode 100644
+index 0000000..cde283a
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeConcurrencyGuard.ts
+@@ -0,0 +1,42 @@
++import type { VoiceRuntimeConfig } from '../config/providerVoiceConfigResolver.js';
++import type { VoicePersistenceAdapter } from '../persistence/adapters/persistenceAdapter.js';
++
++export class VoiceCapacityError extends Error {
++  constructor(message: string) {
++    super(message);
++    this.name = 'VoiceCapacityError';
++  }
++}
++
++export async function assertVoiceCapacity(input: {
++  config: VoiceRuntimeConfig;
++  persistence: VoicePersistenceAdapter;
++}): Promise<void> {
++  const { config, persistence } = input;
++
++  const tenantCalls = await persistence.sessions.countActiveSessions({
++    tenantId: config.tenantId,
++  });
++  if (tenantCalls >= config.runtimeLimits.maxConcurrentTenantCalls) {
++    throw new VoiceCapacityError('Tenant concurrent call limit reached');
++  }
++
++  const businessCalls = await persistence.sessions.countActiveSessions({
++    tenantId: config.tenantId,
++    businessId: config.businessId,
++  });
++  if (businessCalls >= config.runtimeLimits.maxConcurrentBusinessCalls) {
++    throw new VoiceCapacityError('Business concurrent call limit reached');
++  }
++
++  if (!config.locationId) return;
++
++  const locationCalls = await persistence.sessions.countActiveSessions({
++    tenantId: config.tenantId,
++    businessId: config.businessId,
++    locationId: config.locationId,
++  });
++  if (locationCalls >= config.runtimeLimits.maxConcurrentLocationCalls) {
++    throw new VoiceCapacityError('Location concurrent call limit reached');
++  }
++}
+diff --git a/src/server/modules/voice/runtime/liveRuntimeConversationLogger.ts b/src/server/modules/voice/runtime/liveRuntimeConversationLogger.ts
+new file mode 100644
+index 0000000..89d3637
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeConversationLogger.ts
+@@ -0,0 +1 @@
++export const liveRuntimeConversationLogger = 'liveRuntimeConversationLogger';
+diff --git a/src/server/modules/voice/runtime/liveRuntimeLeadCapture.ts b/src/server/modules/voice/runtime/liveRuntimeLeadCapture.ts
+new file mode 100644
+index 0000000..7530c75
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeLeadCapture.ts
+@@ -0,0 +1 @@
++export const liveRuntimeLeadCapture = 'liveRuntimeLeadCapture';
+diff --git a/src/server/modules/voice/runtime/liveRuntimePersistencePipeline.ts b/src/server/modules/voice/runtime/liveRuntimePersistencePipeline.ts
+new file mode 100644
+index 0000000..3a0f9a9
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimePersistencePipeline.ts
+@@ -0,0 +1 @@
++export const liveRuntimePersistencePipeline = 'liveRuntimePersistencePipeline';
+diff --git a/src/server/modules/voice/runtime/liveRuntimePipeline.ts b/src/server/modules/voice/runtime/liveRuntimePipeline.ts
+new file mode 100644
+index 0000000..a26ccfb
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimePipeline.ts
+@@ -0,0 +1,185 @@
++import { resolveVoiceRuntimeConfig } from '../config/tenantVoiceConfigResolver.js';
++import type { VoiceConfigRepository } from '../config/businessVoiceConfigResolver.js';
++import { assertVoiceCapacity } from './liveRuntimeConcurrencyGuard.js';
++import type { VoicePersistenceAdapter } from '../persistence/adapters/persistenceAdapter.js';
++import type {
++  MediaStreamEvent,
++  TelephonyInboundCall,
++  VoiceProviderRegistry,
++} from '../providers/providerConfig.js';
++
++export type VoiceRuntime = {
++  startInboundCall(raw: Record<string, unknown>): Promise<{
++    sessionId: string;
++    callId: string;
++    connectResponse: string;
++  }>;
++  handleMediaStreamEvent(raw: Record<string, unknown>): Promise<{
++    sessionId: string;
++    transcript?: string;
++    responseText?: string;
++    audioBase64?: string;
++  } | null>;
++};
++
++export function createVoiceRuntime(input: {
++  configRepository: VoiceConfigRepository;
++  persistence: VoicePersistenceAdapter;
++  providers: VoiceProviderRegistry;
++  mediaStreamUrl: string;
++}): VoiceRuntime {
++  const { configRepository, persistence, providers, mediaStreamUrl } = input;
++
++  return {
++    async startInboundCall(raw) {
++      const inboundCall = providers.telephony.parseInboundCall(raw);
++      const config = await resolveVoiceRuntimeConfig({
++        phoneNumber: inboundCall.toNumber,
++        repository: configRepository,
++      });
++      await assertVoiceCapacity({ config, persistence });
++      const call = await persistence.calls.createCall({
++        tenantId: config.tenantId,
++        businessId: config.businessId,
++        locationId: config.locationId,
++        providerCallId: inboundCall.providerCallId,
++        toNumber: inboundCall.toNumber,
++        status: 'in_progress',
++        startedAt: new Date(),
++        ...(inboundCall.fromNumber ? { fromNumber: inboundCall.fromNumber } : {}),
++      });
++      const session = await persistence.sessions.createSession({
++        callId: call.id,
++        tenantId: config.tenantId,
++        businessId: config.businessId,
++        locationId: config.locationId,
++        providerCallId: inboundCall.providerCallId,
++        status: 'starting',
++        config,
++      });
++
++      await persistence.events.recordRuntimeEvent({
++        tenantId: config.tenantId,
++        businessId: config.businessId,
++        locationId: config.locationId,
++        callId: call.id,
++        sessionId: session.id,
++        severity: 'info',
++        type: 'voice.call_started',
++        message: 'Inbound call session created',
++        metadata: { providerCallId: inboundCall.providerCallId },
++      });
++
++      return {
++        sessionId: session.id,
++        callId: call.id,
++        connectResponse: providers.telephony.buildConnectMediaStreamResponse({
++          call: inboundCall,
++          streamUrl: mediaStreamUrl,
++        }),
++      };
++    },
++
++    async handleMediaStreamEvent(raw) {
++      const event = providers.telephony.parseMediaStreamEvent(raw);
++      const session = await resolveSessionForMediaEvent(persistence, event);
++      if (!session) return null;
++
++      if (event.event === 'start') {
++        await persistence.sessions.updateSession({
++          ...session,
++          streamId: event.streamId,
++          status: 'active',
++        });
++        return { sessionId: session.id };
++      }
++
++      if (event.event === 'stop') {
++        await persistence.sessions.updateSession({
++          ...session,
++          status: 'ended',
++        });
++        return { sessionId: session.id };
++      }
++
++      if (!event.payload) return { sessionId: session.id };
++
++      const transcript = await providers.stt.transcribeAudio({
++        config: session.config,
++        audioBase64: event.payload,
++      });
++      if (!transcript) return { sessionId: session.id };
++
++      await persistence.transcripts.appendSegment({
++        sessionId: session.id,
++        callId: session.callId,
++        speaker: 'caller',
++        text: transcript.text,
++        isFinal: transcript.isFinal,
++        confidence: transcript.confidence,
++      });
++      await persistence.conversations.appendTurn({
++        sessionId: session.id,
++        callId: session.callId,
++        role: 'caller',
++        content: transcript.text,
++      });
++
++      const llmResponse = await providers.llm.generateResponse({
++        config: session.config,
++        sessionId: session.id,
++        transcript: transcript.text,
++      });
++
++      for (const request of llmResponse.toolRequests) {
++        await persistence.toolExecutions.createToolExecution({
++          sessionId: session.id,
++          callId: session.callId,
++          toolName: request.toolName,
++          status: 'pending',
++          request: request.payload,
++        });
++      }
++
++      await persistence.conversations.appendTurn({
++        sessionId: session.id,
++        callId: session.callId,
++        role: 'assistant',
++        content: llmResponse.text,
++      });
++
++      const audio = await providers.tts.synthesize({
++        config: session.config,
++        text: llmResponse.text,
++      });
++
++      return {
++        sessionId: session.id,
++        transcript: transcript.text,
++        responseText: llmResponse.text,
++        audioBase64: audio.audioBase64,
++      };
++    },
++  };
++}
++
++async function resolveSessionForMediaEvent(
++  persistence: VoicePersistenceAdapter,
++  event: MediaStreamEvent
++) {
++  if (event.providerCallId) {
++    const byCall = await persistence.sessions.findSessionByProviderCallId(event.providerCallId);
++    if (byCall) return byCall;
++  }
++
++  return persistence.sessions.findSessionByStreamId(event.streamId);
++}
++
++export function parseSignalWireFormBody(body: Record<string, unknown>): TelephonyInboundCall {
++  return {
++    providerCallId: String(body.CallSid ?? body.callSid ?? ''),
++    toNumber: String(body.To ?? body.to ?? ''),
++    raw: body,
++    ...(body.From ? { fromNumber: String(body.From) } : {}),
++  };
++}
+diff --git a/src/server/modules/voice/runtime/liveRuntimeRecoveryManager.ts b/src/server/modules/voice/runtime/liveRuntimeRecoveryManager.ts
+new file mode 100644
+index 0000000..8500b26
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeRecoveryManager.ts
+@@ -0,0 +1 @@
++export const liveRuntimeRecoveryManager = 'liveRuntimeRecoveryManager';
+diff --git a/src/server/modules/voice/runtime/liveRuntimeSessionHealthMonitor.ts b/src/server/modules/voice/runtime/liveRuntimeSessionHealthMonitor.ts
+new file mode 100644
+index 0000000..92b3c7c
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeSessionHealthMonitor.ts
+@@ -0,0 +1 @@
++export const liveRuntimeSessionHealthMonitor = 'liveRuntimeSessionHealthMonitor';
+diff --git a/src/server/modules/voice/runtime/liveRuntimeSessionRegistry.ts b/src/server/modules/voice/runtime/liveRuntimeSessionRegistry.ts
+new file mode 100644
+index 0000000..4034d2f
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeSessionRegistry.ts
+@@ -0,0 +1 @@
++export const liveRuntimeSessionRegistry = 'liveRuntimeSessionRegistry';
+diff --git a/src/server/modules/voice/runtime/liveRuntimeSessionRouter.ts b/src/server/modules/voice/runtime/liveRuntimeSessionRouter.ts
+new file mode 100644
+index 0000000..c6a06cd
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeSessionRouter.ts
+@@ -0,0 +1 @@
++export const liveRuntimeSessionRouter = 'liveRuntimeSessionRouter';
+diff --git a/src/server/modules/voice/runtime/liveRuntimeTenantContext.ts b/src/server/modules/voice/runtime/liveRuntimeTenantContext.ts
+new file mode 100644
+index 0000000..95924a4
+--- /dev/null
++++ b/src/server/modules/voice/runtime/liveRuntimeTenantContext.ts
+@@ -0,0 +1,22 @@
++export type TenantScope = {
++  tenantId: string;
++  businessId: string;
++  locationId: string;
++};
++
++export function assertSameTenantScope(
++  expected: TenantScope,
++  actual: TenantScope
++): void {
++  if (expected.tenantId !== actual.tenantId) {
++    throw new Error('Cross-tenant access denied');
++  }
++
++  if (expected.businessId !== actual.businessId) {
++    throw new Error('Cross-business access denied');
++  }
++
++  if (expected.locationId !== actual.locationId) {
++    throw new Error('Cross-location access denied');
++  }
++}
+diff --git a/src/server/modules/voice/runtime/tests/liveRuntimeConcurrencyGuard.test.ts b/src/server/modules/voice/runtime/tests/liveRuntimeConcurrencyGuard.test.ts
+new file mode 100644
+index 0000000..af94281
+--- /dev/null
++++ b/src/server/modules/voice/runtime/tests/liveRuntimeConcurrencyGuard.test.ts
+@@ -0,0 +1,82 @@
++import { describe, expect, it } from 'vitest';
++import { assertVoiceCapacity, VoiceCapacityError } from '../liveRuntimeConcurrencyGuard.js';
++import { createMemoryVoicePersistenceAdapter } from '../../persistence/adapters/memory/memoryPersistenceAdapter.js';
++import type { VoiceRuntimeConfig } from '../../config/providerVoiceConfigResolver.js';
++
++function config(overrides: Partial<VoiceRuntimeConfig> = {}): VoiceRuntimeConfig {
++  return {
++    tenantId: 'tenant_1',
++    businessId: 'business_1',
++    locationId: 'location_default',
++    businessName: 'Business',
++    locationName: 'default',
++    phoneNumber: '+14805550100',
++    isMultiLocation: false,
++    routing: {
++      mode: 'single_location',
++      defaultLocationId: 'location_default',
++      routeByPhoneNumber: true,
++      routeByZipCode: false,
++      routeByCity: false,
++    },
++    providers: {
++      telephony: 'signalwire',
++      stt: 'deepgram',
++      llm: 'openai',
++      tts: 'deepgram_voice',
++    },
++    featureFlags: {
++      smsEnabled: false,
++      bookingEnabled: false,
++      recordingEnabled: false,
++      emergencyRoutingEnabled: true,
++      humanTransferEnabled: false,
++    },
++    runtimeLimits: {
++      maxCallDurationSeconds: 900,
++      maxTranscriptCharacters: 80_000,
++      maxToolExecutionsPerCall: 20,
++      maxRealtimeReconnects: 3,
++      maxConcurrentTenantCalls: 1,
++      maxConcurrentBusinessCalls: 1,
++      maxConcurrentLocationCalls: 1,
++      maxCallStartsPerMinute: 120,
++    },
++    services: [],
++    serviceAreas: [],
++    pricingRules: [],
++    faqs: [],
++    policies: [],
++    emergencyRouting: { enabled: true },
++    afterHoursBehavior: { mode: 'answer' },
++    ...overrides,
++  };
++}
++
++describe('assertVoiceCapacity', () => {
++  it('allows a call when scoped capacity is available', async () => {
++    await expect(
++      assertVoiceCapacity({
++        config: config(),
++        persistence: createMemoryVoicePersistenceAdapter(),
++      })
++    ).resolves.toBeUndefined();
++  });
++
++  it('rejects new calls when tenant capacity is reached', async () => {
++    const persistence = createMemoryVoicePersistenceAdapter();
++    const runtimeConfig = config();
++    await persistence.sessions.createSession({
++      callId: 'call_1',
++      tenantId: runtimeConfig.tenantId,
++      businessId: runtimeConfig.businessId,
++      locationId: runtimeConfig.locationId,
++      status: 'active',
++      config: runtimeConfig,
++    });
++
++    await expect(
++      assertVoiceCapacity({ config: runtimeConfig, persistence })
++    ).rejects.toBeInstanceOf(VoiceCapacityError);
++  });
++});
+diff --git a/src/server/modules/voice/runtime/tests/liveRuntimePipeline.test.ts b/src/server/modules/voice/runtime/tests/liveRuntimePipeline.test.ts
+new file mode 100644
+index 0000000..5321805
+--- /dev/null
++++ b/src/server/modules/voice/runtime/tests/liveRuntimePipeline.test.ts
+@@ -0,0 +1,55 @@
++import { describe, expect, it } from 'vitest';
++import { createMemoryVoiceConfigRepository } from '../../config/memoryVoiceConfigRepository.js';
++import { createMemoryVoicePersistenceAdapter } from '../../persistence/adapters/memory/memoryPersistenceAdapter.js';
++import {
++  mockLlmProvider,
++  mockSttProvider,
++  mockTelephonyProvider,
++  mockTtsProvider,
++} from './mockRuntimeProviders.js';
++import { createVoiceRuntime } from '../liveRuntimePipeline.js';
++
++describe('createVoiceRuntime', () => {
++  it('starts a SignalWire call and processes a media turn through STT, OpenAI, and Deepgram voice ports', async () => {
++    const persistence = createMemoryVoicePersistenceAdapter();
++    const runtime = createVoiceRuntime({
++      configRepository: createMemoryVoiceConfigRepository(),
++      persistence,
++      providers: {
++        telephony: mockTelephonyProvider,
++        stt: mockSttProvider,
++        llm: mockLlmProvider,
++        tts: mockTtsProvider,
++      },
++      mediaStreamUrl: 'wss://voice.example.test/media',
++    });
++
++    const started = await runtime.startInboundCall({
++      CallSid: 'CA123',
++      From: '+16025550100',
++      To: '+14805550100',
++    });
++
++    expect(started.connectResponse).toContain('wss://voice.example.test/media');
++
++    await runtime.handleMediaStreamEvent({
++      event: 'start',
++      callSid: 'CA123',
++      streamSid: 'MS123',
++    });
++
++    const media = await runtime.handleMediaStreamEvent({
++      event: 'media',
++      callSid: 'CA123',
++      streamSid: 'MS123',
++      payload: Buffer.from('What does pool cleaning cost?', 'utf8').toString('base64'),
++    });
++
++    expect(media).toMatchObject({
++      transcript: 'What does pool cleaning cost?',
++      responseText: 'I can help with pricing. What service and zip code should I check?',
++    });
++    expect(media?.audioBase64).toBeTruthy();
++    await expect(persistence.conversations.listTurns(started.sessionId)).resolves.toHaveLength(2);
++  });
++});
+diff --git a/src/server/modules/voice/runtime/tests/mockRuntimeProviders.ts b/src/server/modules/voice/runtime/tests/mockRuntimeProviders.ts
+new file mode 100644
+index 0000000..1867b0b
+--- /dev/null
++++ b/src/server/modules/voice/runtime/tests/mockRuntimeProviders.ts
+@@ -0,0 +1,68 @@
++import type {
++  LlmProvider,
++  SttProvider,
++  TelephonyProvider,
++  TtsProvider,
++} from '../../providers/providerConfig.js';
++
++export const mockTelephonyProvider: TelephonyProvider = {
++  parseInboundCall(raw) {
++    return {
++      providerCallId: String(raw.CallSid ?? raw.callSid ?? 'mock-call'),
++      toNumber: String(raw.To ?? raw.to ?? ''),
++      raw,
++      ...(raw.From ? { fromNumber: String(raw.From) } : {}),
++    };
++  },
++  parseMediaStreamEvent(raw) {
++    return {
++      streamId: String(raw.streamSid ?? raw.streamId ?? 'mock-stream'),
++      event: String(raw.event ?? 'media') as 'start' | 'media' | 'stop' | 'mark',
++      raw,
++      ...(raw.callSid ? { providerCallId: String(raw.callSid) } : {}),
++      ...(raw.payload ? { payload: String(raw.payload) } : {}),
++    };
++  },
++  buildConnectMediaStreamResponse({ streamUrl }) {
++    return `<Response><Connect><Stream url="${streamUrl}" /></Connect></Response>`;
++  },
++};
++
++export const mockSttProvider: SttProvider = {
++  async transcribeAudio({ audioBase64 }) {
++    if (!audioBase64) return null;
++    return {
++      text: Buffer.from(audioBase64, 'base64').toString('utf8'),
++      isFinal: true,
++      confidence: 1,
++    };
++  },
++};
++
++export const mockLlmProvider: LlmProvider = {
++  async generateResponse({ transcript }) {
++    const text = transcript.toLowerCase();
++    if (text.includes('price') || text.includes('cost')) {
++      return {
++        text: 'I can help with pricing. What service and zip code should I check?',
++        intent: 'pricing',
++        toolRequests: [{ toolName: 'lookup_pricing', payload: { transcript } }],
++      };
++    }
++
++    return {
++      text: 'I can help with that. Can I get a few details?',
++      intent: 'general',
++      toolRequests: [],
++    };
++  },
++};
++
++export const mockTtsProvider: TtsProvider = {
++  async synthesize({ text }) {
++    return {
++      audioBase64: Buffer.from(text, 'utf8').toString('base64'),
++      format: 'mulaw',
++    };
++  },
++};
+diff --git a/src/server/modules/voice/security/abuseDetection.ts b/src/server/modules/voice/security/abuseDetection.ts
+new file mode 100644
+index 0000000..f935a17
+--- /dev/null
++++ b/src/server/modules/voice/security/abuseDetection.ts
+@@ -0,0 +1 @@
++export const abuseDetection = 'abuseDetection';
+diff --git a/src/server/modules/voice/security/auditLogger.ts b/src/server/modules/voice/security/auditLogger.ts
+new file mode 100644
+index 0000000..1038138
+--- /dev/null
++++ b/src/server/modules/voice/security/auditLogger.ts
+@@ -0,0 +1 @@
++export const auditLogger = 'auditLogger';
+diff --git a/src/server/modules/voice/security/piiRedaction.ts b/src/server/modules/voice/security/piiRedaction.ts
+new file mode 100644
+index 0000000..2e7e0a1
+--- /dev/null
++++ b/src/server/modules/voice/security/piiRedaction.ts
+@@ -0,0 +1 @@
++export const piiRedaction = 'piiRedaction';
+diff --git a/src/server/modules/voice/security/rateLimiter.ts b/src/server/modules/voice/security/rateLimiter.ts
+new file mode 100644
+index 0000000..b492e58
+--- /dev/null
++++ b/src/server/modules/voice/security/rateLimiter.ts
+@@ -0,0 +1 @@
++export const rateLimiter = 'rateLimiter';
+diff --git a/src/server/modules/voice/security/tenantIsolationGuard.ts b/src/server/modules/voice/security/tenantIsolationGuard.ts
+new file mode 100644
+index 0000000..1855226
+--- /dev/null
++++ b/src/server/modules/voice/security/tenantIsolationGuard.ts
+@@ -0,0 +1 @@
++export const tenantIsolationGuard = 'tenantIsolationGuard';
+diff --git a/src/server/modules/voice/security/webhookSignatureVerifier.ts b/src/server/modules/voice/security/webhookSignatureVerifier.ts
+new file mode 100644
+index 0000000..fd28cd4
+--- /dev/null
++++ b/src/server/modules/voice/security/webhookSignatureVerifier.ts
+@@ -0,0 +1,13 @@
++export type WebhookSignatureVerifier = {
++  verify(input: {
++    rawBody: string;
++    signature?: string;
++    timestamp?: string;
++  }): Promise<boolean>;
++};
++
++export const allowUnsignedWebhooksForDevelopment: WebhookSignatureVerifier = {
++  async verify() {
++    return true;
++  },
++};
+diff --git a/src/server/modules/voice/security/websocketAuthGuard.ts b/src/server/modules/voice/security/websocketAuthGuard.ts
+new file mode 100644
+index 0000000..3fb4282
+--- /dev/null
++++ b/src/server/modules/voice/security/websocketAuthGuard.ts
+@@ -0,0 +1 @@
++export const websocketAuthGuard = 'websocketAuthGuard';
+diff --git a/src/server/modules/voice/tools/README.md b/src/server/modules/voice/tools/README.md
+new file mode 100644
+index 0000000..e309608
+--- /dev/null
++++ b/src/server/modules/voice/tools/README.md
+@@ -0,0 +1,3 @@
++# tools Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/tools/tools/bookingTool.ts b/src/server/modules/voice/tools/tools/bookingTool.ts
+new file mode 100644
+index 0000000..5af889d
+--- /dev/null
++++ b/src/server/modules/voice/tools/tools/bookingTool.ts
+@@ -0,0 +1 @@
++export const bookingTool = 'bookingTool';
+diff --git a/src/server/modules/voice/tools/tools/leadTool.ts b/src/server/modules/voice/tools/tools/leadTool.ts
+new file mode 100644
+index 0000000..5a4c966
+--- /dev/null
++++ b/src/server/modules/voice/tools/tools/leadTool.ts
+@@ -0,0 +1 @@
++export const leadTool = 'leadTool';
+diff --git a/src/server/modules/voice/tools/tools/pricingTool.ts b/src/server/modules/voice/tools/tools/pricingTool.ts
+new file mode 100644
+index 0000000..ef921af
+--- /dev/null
++++ b/src/server/modules/voice/tools/tools/pricingTool.ts
+@@ -0,0 +1 @@
++export const pricingTool = 'pricingTool';
+diff --git a/src/server/modules/voice/tools/tools/serviceAreaTool.ts b/src/server/modules/voice/tools/tools/serviceAreaTool.ts
+new file mode 100644
+index 0000000..9734d82
+--- /dev/null
++++ b/src/server/modules/voice/tools/tools/serviceAreaTool.ts
+@@ -0,0 +1 @@
++export const serviceAreaTool = 'serviceAreaTool';
+diff --git a/src/server/modules/voice/tools/tools/smsTool.ts b/src/server/modules/voice/tools/tools/smsTool.ts
+new file mode 100644
+index 0000000..be755a3
+--- /dev/null
++++ b/src/server/modules/voice/tools/tools/smsTool.ts
+@@ -0,0 +1 @@
++export const smsTool = 'smsTool';
+diff --git a/src/server/modules/voice/tools/tools/transferTool.ts b/src/server/modules/voice/tools/tools/transferTool.ts
+new file mode 100644
+index 0000000..8159218
+--- /dev/null
++++ b/src/server/modules/voice/tools/tools/transferTool.ts
+@@ -0,0 +1 @@
++export const transferTool = 'transferTool';
+diff --git a/src/server/modules/voice/tools/voiceToolRegistry.ts b/src/server/modules/voice/tools/voiceToolRegistry.ts
+new file mode 100644
+index 0000000..d0b7b76
+--- /dev/null
++++ b/src/server/modules/voice/tools/voiceToolRegistry.ts
+@@ -0,0 +1 @@
++export const voiceToolRegistry = 'voiceToolRegistry';
+diff --git a/src/server/modules/voice/tools/voiceToolRuntime.ts b/src/server/modules/voice/tools/voiceToolRuntime.ts
+new file mode 100644
+index 0000000..853cca7
+--- /dev/null
++++ b/src/server/modules/voice/tools/voiceToolRuntime.ts
+@@ -0,0 +1 @@
++export const voiceToolRuntime = 'voiceToolRuntime';
+diff --git a/src/server/modules/voice/transport/liveCallBridge.ts b/src/server/modules/voice/transport/liveCallBridge.ts
+new file mode 100644
+index 0000000..80bc087
+--- /dev/null
++++ b/src/server/modules/voice/transport/liveCallBridge.ts
+@@ -0,0 +1,115 @@
++import { Router } from 'express';
++import { createMemoryVoiceConfigRepository } from '../config/memoryVoiceConfigRepository.js';
++import { createMemoryVoicePersistenceAdapter } from '../persistence/adapters/memory/memoryPersistenceAdapter.js';
++import type {
++  LlmProvider,
++  SttProvider,
++  TelephonyProvider,
++  TtsProvider,
++} from '../providers/providerConfig.js';
++import { createVoiceRuntime } from '../runtime/liveRuntimePipeline.js';
++
++export function createVoiceRouter(): Router {
++  const router = Router();
++  const runtime = createVoiceRuntime({
++    configRepository: createMemoryVoiceConfigRepository(),
++    persistence: createMemoryVoicePersistenceAdapter(),
++    providers: {
++      telephony: mockTelephonyProvider,
++      stt: mockSttProvider,
++      llm: mockLlmProvider,
++      tts: mockTtsProvider,
++    },
++    mediaStreamUrl: process.env.SENNA_MEDIA_STREAM_URL ?? 'wss://example.com/voice/media',
++  });
++
++  router.post('/signalwire/webhook', async (req, res, next) => {
++    try {
++      const result = await runtime.startInboundCall(req.body);
++      res.type('text/xml').send(result.connectResponse);
++    } catch (error) {
++      next(error);
++    }
++  });
++
++  router.post('/signalwire/media', async (req, res, next) => {
++    try {
++      const result = await runtime.handleMediaStreamEvent(req.body);
++      res.json({ ok: true, result });
++    } catch (error) {
++      next(error);
++    }
++  });
++
++  router.post('/signalwire/status', (_req, res) => {
++    res.json({ ok: true });
++  });
++
++  router.post('/signalwire/recording-status', (_req, res) => {
++    res.json({ ok: true });
++  });
++
++  return router;
++}
++
++const mockTelephonyProvider: TelephonyProvider = {
++  parseInboundCall(raw) {
++    return {
++      providerCallId: String(raw.CallSid ?? raw.callSid ?? 'mock-call'),
++      toNumber: String(raw.To ?? raw.to ?? ''),
++      raw,
++      ...(raw.From ? { fromNumber: String(raw.From) } : {}),
++    };
++  },
++  parseMediaStreamEvent(raw) {
++    return {
++      streamId: String(raw.streamSid ?? raw.streamId ?? 'mock-stream'),
++      event: String(raw.event ?? 'media') as 'start' | 'media' | 'stop' | 'mark',
++      raw,
++      ...(raw.callSid ? { providerCallId: String(raw.callSid) } : {}),
++      ...(raw.payload ? { payload: String(raw.payload) } : {}),
++    };
++  },
++  buildConnectMediaStreamResponse({ streamUrl }) {
++    return `<Response><Connect><Stream url="${streamUrl}" /></Connect></Response>`;
++  },
++};
++
++const mockSttProvider: SttProvider = {
++  async transcribeAudio({ audioBase64 }) {
++    if (!audioBase64) return null;
++    return {
++      text: Buffer.from(audioBase64, 'base64').toString('utf8'),
++      isFinal: true,
++      confidence: 1,
++    };
++  },
++};
++
++const mockLlmProvider: LlmProvider = {
++  async generateResponse({ transcript }) {
++    const text = transcript.toLowerCase();
++    if (text.includes('price') || text.includes('cost')) {
++      return {
++        text: 'I can help with pricing. What service and zip code should I check?',
++        intent: 'pricing',
++        toolRequests: [{ toolName: 'lookup_pricing', payload: { transcript } }],
++      };
++    }
++
++    return {
++      text: 'I can help with that. Can I get a few details?',
++      intent: 'general',
++      toolRequests: [],
++    };
++  },
++};
++
++const mockTtsProvider: TtsProvider = {
++  async synthesize({ text }) {
++    return {
++      audioBase64: Buffer.from(text, 'utf8').toString('base64'),
++      format: 'mulaw',
++    };
++  },
++};
+diff --git a/src/server/modules/voice/transport/mediaStreamRouter.ts b/src/server/modules/voice/transport/mediaStreamRouter.ts
+new file mode 100644
+index 0000000..f33628d
+--- /dev/null
++++ b/src/server/modules/voice/transport/mediaStreamRouter.ts
+@@ -0,0 +1 @@
++export const mediaStreamRouter = 'mediaStreamRouter';
+diff --git a/src/server/modules/voice/transport/signalWireRealtimeSocket.ts b/src/server/modules/voice/transport/signalWireRealtimeSocket.ts
+new file mode 100644
+index 0000000..e1531e9
+--- /dev/null
++++ b/src/server/modules/voice/transport/signalWireRealtimeSocket.ts
+@@ -0,0 +1 @@
++export const signalWireRealtimeSocket = 'signalWireRealtimeSocket';
+diff --git a/src/server/modules/voice/transport/websocketConnectionManager.ts b/src/server/modules/voice/transport/websocketConnectionManager.ts
+new file mode 100644
+index 0000000..0d8a98b
+--- /dev/null
++++ b/src/server/modules/voice/transport/websocketConnectionManager.ts
+@@ -0,0 +1 @@
++export const websocketConnectionManager = 'websocketConnectionManager';
+diff --git a/src/server/modules/voice/tts/README.md b/src/server/modules/voice/tts/README.md
+new file mode 100644
+index 0000000..7bf0134
+--- /dev/null
++++ b/src/server/modules/voice/tts/README.md
+@@ -0,0 +1,3 @@
++# tts Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/tts/ttsChunkNormalizer.ts b/src/server/modules/voice/tts/ttsChunkNormalizer.ts
+new file mode 100644
+index 0000000..d5cb8e2
+--- /dev/null
++++ b/src/server/modules/voice/tts/ttsChunkNormalizer.ts
+@@ -0,0 +1 @@
++export const ttsChunkNormalizer = 'ttsChunkNormalizer';
+diff --git a/src/server/modules/voice/tts/ttsFailoverManager.ts b/src/server/modules/voice/tts/ttsFailoverManager.ts
+new file mode 100644
+index 0000000..20402cd
+--- /dev/null
++++ b/src/server/modules/voice/tts/ttsFailoverManager.ts
+@@ -0,0 +1 @@
++export const ttsFailoverManager = 'ttsFailoverManager';
+diff --git a/src/server/modules/voice/tts/ttsProvider.ts b/src/server/modules/voice/tts/ttsProvider.ts
+new file mode 100644
+index 0000000..9421d7f
+--- /dev/null
++++ b/src/server/modules/voice/tts/ttsProvider.ts
+@@ -0,0 +1 @@
++export const ttsProvider = 'ttsProvider';
+diff --git a/src/server/modules/voice/tts/ttsRouter.ts b/src/server/modules/voice/tts/ttsRouter.ts
+new file mode 100644
+index 0000000..8db542b
+--- /dev/null
++++ b/src/server/modules/voice/tts/ttsRouter.ts
+@@ -0,0 +1 @@
++export const ttsRouter = 'ttsRouter';
+diff --git a/src/server/modules/voice/widget/README.md b/src/server/modules/voice/widget/README.md
+new file mode 100644
+index 0000000..a6b5d9c
+--- /dev/null
++++ b/src/server/modules/voice/widget/README.md
+@@ -0,0 +1,3 @@
++# widget Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/widget/widgetConversationPipeline.ts b/src/server/modules/voice/widget/widgetConversationPipeline.ts
+new file mode 100644
+index 0000000..9d930bd
+--- /dev/null
++++ b/src/server/modules/voice/widget/widgetConversationPipeline.ts
+@@ -0,0 +1 @@
++export const widgetConversationPipeline = 'widgetConversationPipeline';
+diff --git a/src/server/modules/voice/widget/widgetInstallConfig.ts b/src/server/modules/voice/widget/widgetInstallConfig.ts
+new file mode 100644
+index 0000000..1fad292
+--- /dev/null
++++ b/src/server/modules/voice/widget/widgetInstallConfig.ts
+@@ -0,0 +1 @@
++export const widgetInstallConfig = 'widgetInstallConfig';
+diff --git a/src/server/modules/voice/widget/widgetLeadCapture.ts b/src/server/modules/voice/widget/widgetLeadCapture.ts
+new file mode 100644
+index 0000000..3088ae6
+--- /dev/null
++++ b/src/server/modules/voice/widget/widgetLeadCapture.ts
+@@ -0,0 +1 @@
++export const widgetLeadCapture = 'widgetLeadCapture';
+diff --git a/src/server/modules/voice/widget/widgetPricingFlow.ts b/src/server/modules/voice/widget/widgetPricingFlow.ts
+new file mode 100644
+index 0000000..010c424
+--- /dev/null
++++ b/src/server/modules/voice/widget/widgetPricingFlow.ts
+@@ -0,0 +1 @@
++export const widgetPricingFlow = 'widgetPricingFlow';
+diff --git a/src/server/modules/voice/widget/widgetRuntime.ts b/src/server/modules/voice/widget/widgetRuntime.ts
+new file mode 100644
+index 0000000..9946c92
+--- /dev/null
++++ b/src/server/modules/voice/widget/widgetRuntime.ts
+@@ -0,0 +1 @@
++export const widgetRuntime = 'widgetRuntime';
+diff --git a/src/server/modules/voice/widget/widgetServiceAreaFlow.ts b/src/server/modules/voice/widget/widgetServiceAreaFlow.ts
+new file mode 100644
+index 0000000..7733877
+--- /dev/null
++++ b/src/server/modules/voice/widget/widgetServiceAreaFlow.ts
+@@ -0,0 +1 @@
++export const widgetServiceAreaFlow = 'widgetServiceAreaFlow';
+diff --git a/src/server/modules/voice/workers/README.md b/src/server/modules/voice/workers/README.md
+new file mode 100644
+index 0000000..ab5fa01
+--- /dev/null
++++ b/src/server/modules/voice/workers/README.md
+@@ -0,0 +1,3 @@
++# workers Module
++
++Reserved approved voice module boundary. Add implementation here when this subsystem is built.
+diff --git a/src/server/modules/voice/workers/analyticsWorker.ts b/src/server/modules/voice/workers/analyticsWorker.ts
+new file mode 100644
+index 0000000..d5c31d6
+--- /dev/null
++++ b/src/server/modules/voice/workers/analyticsWorker.ts
+@@ -0,0 +1 @@
++export const analyticsWorker = 'analyticsWorker';
+diff --git a/src/server/modules/voice/workers/failoverWorker.ts b/src/server/modules/voice/workers/failoverWorker.ts
+new file mode 100644
+index 0000000..c6f812a
+--- /dev/null
++++ b/src/server/modules/voice/workers/failoverWorker.ts
+@@ -0,0 +1 @@
++export const failoverWorker = 'failoverWorker';
+diff --git a/src/server/modules/voice/workers/leadCaptureWorker.ts b/src/server/modules/voice/workers/leadCaptureWorker.ts
+new file mode 100644
+index 0000000..6270754
+--- /dev/null
++++ b/src/server/modules/voice/workers/leadCaptureWorker.ts
+@@ -0,0 +1 @@
++export const leadCaptureWorker = 'leadCaptureWorker';
+diff --git a/src/server/modules/voice/workers/notificationWorker.ts b/src/server/modules/voice/workers/notificationWorker.ts
+new file mode 100644
+index 0000000..1b58f68
+--- /dev/null
++++ b/src/server/modules/voice/workers/notificationWorker.ts
+@@ -0,0 +1 @@
++export const notificationWorker = 'notificationWorker';
+diff --git a/src/server/modules/voice/workers/queueProcessor.ts b/src/server/modules/voice/workers/queueProcessor.ts
+new file mode 100644
+index 0000000..4bdd159
+--- /dev/null
++++ b/src/server/modules/voice/workers/queueProcessor.ts
+@@ -0,0 +1 @@
++export const queueProcessor = 'queueProcessor';
+diff --git a/src/server/modules/voice/workers/reasoningWorker.ts b/src/server/modules/voice/workers/reasoningWorker.ts
+new file mode 100644
+index 0000000..5a52b1f
+--- /dev/null
++++ b/src/server/modules/voice/workers/reasoningWorker.ts
+@@ -0,0 +1 @@
++export const reasoningWorker = 'reasoningWorker';
+diff --git a/src/server/modules/voice/workers/retryWorker.ts b/src/server/modules/voice/workers/retryWorker.ts
+new file mode 100644
+index 0000000..3c0a8b9
+--- /dev/null
++++ b/src/server/modules/voice/workers/retryWorker.ts
+@@ -0,0 +1 @@
++export const retryWorker = 'retryWorker';
+diff --git a/src/server/modules/voice/workers/summaryWorker.ts b/src/server/modules/voice/workers/summaryWorker.ts
+new file mode 100644
+index 0000000..a2c8da6
+--- /dev/null
++++ b/src/server/modules/voice/workers/summaryWorker.ts
+@@ -0,0 +1 @@
++export const summaryWorker = 'summaryWorker';
+diff --git a/src/server/modules/voice/workers/transcriptWorker.ts b/src/server/modules/voice/workers/transcriptWorker.ts
+new file mode 100644
+index 0000000..6d70c74
+--- /dev/null
++++ b/src/server/modules/voice/workers/transcriptWorker.ts
+@@ -0,0 +1 @@
++export const transcriptWorker = 'transcriptWorker';
+diff --git a/src/server/modules/voice/workflows/realtimeAbandonedLeadWorkflow.ts b/src/server/modules/voice/workflows/realtimeAbandonedLeadWorkflow.ts
+new file mode 100644
+index 0000000..f2393d7
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimeAbandonedLeadWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimeAbandonedLeadWorkflow = 'realtimeAbandonedLeadWorkflow';
+diff --git a/src/server/modules/voice/workflows/realtimeAfterHoursWorkflow.ts b/src/server/modules/voice/workflows/realtimeAfterHoursWorkflow.ts
+new file mode 100644
+index 0000000..448bcd4
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimeAfterHoursWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimeAfterHoursWorkflow = 'realtimeAfterHoursWorkflow';
+diff --git a/src/server/modules/voice/workflows/realtimeBookingWorkflow.ts b/src/server/modules/voice/workflows/realtimeBookingWorkflow.ts
+new file mode 100644
+index 0000000..3d35317
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimeBookingWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimeBookingWorkflow = 'realtimeBookingWorkflow';
+diff --git a/src/server/modules/voice/workflows/realtimeEmergencyWorkflow.ts b/src/server/modules/voice/workflows/realtimeEmergencyWorkflow.ts
+new file mode 100644
+index 0000000..968d533
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimeEmergencyWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimeEmergencyWorkflow = 'realtimeEmergencyWorkflow';
+diff --git a/src/server/modules/voice/workflows/realtimeHumanTransferWorkflow.ts b/src/server/modules/voice/workflows/realtimeHumanTransferWorkflow.ts
+new file mode 100644
+index 0000000..c90f507
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimeHumanTransferWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimeHumanTransferWorkflow = 'realtimeHumanTransferWorkflow';
+diff --git a/src/server/modules/voice/workflows/realtimeLeadCaptureWorkflow.ts b/src/server/modules/voice/workflows/realtimeLeadCaptureWorkflow.ts
+new file mode 100644
+index 0000000..42bbea2
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimeLeadCaptureWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimeLeadCaptureWorkflow = 'realtimeLeadCaptureWorkflow';
+diff --git a/src/server/modules/voice/workflows/realtimePricingWorkflow.ts b/src/server/modules/voice/workflows/realtimePricingWorkflow.ts
+new file mode 100644
+index 0000000..a2002b8
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimePricingWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimePricingWorkflow = 'realtimePricingWorkflow';
+diff --git a/src/server/modules/voice/workflows/realtimeSupportWorkflow.ts b/src/server/modules/voice/workflows/realtimeSupportWorkflow.ts
+new file mode 100644
+index 0000000..92acc67
+--- /dev/null
++++ b/src/server/modules/voice/workflows/realtimeSupportWorkflow.ts
+@@ -0,0 +1 @@
++export const realtimeSupportWorkflow = 'realtimeSupportWorkflow';
+diff --git a/tsconfig.json b/tsconfig.json
+new file mode 100644
+index 0000000..d085c1d
+--- /dev/null
++++ b/tsconfig.json
+@@ -0,0 +1,15 @@
++{
++  "compilerOptions": {
++    "target": "ES2022",
++    "module": "NodeNext",
++    "moduleResolution": "NodeNext",
++    "strict": true,
++    "esModuleInterop": true,
++    "forceConsistentCasingInFileNames": true,
++    "skipLibCheck": true,
++    "noUncheckedIndexedAccess": true,
++    "exactOptionalPropertyTypes": true,
++    "types": ["node", "vitest/globals"]
++  },
++  "include": ["src/**/*.ts", "tests/**/*.ts"]
++}
+-- 
+2.50.1 (Apple Git-155)
+

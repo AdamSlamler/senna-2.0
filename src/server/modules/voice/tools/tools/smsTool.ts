@@ -1,0 +1,1 @@
+export const smsTool = 'smsTool';
