@@ -38,7 +38,18 @@ export function createMemoryVoiceConfigRepository(input?: {
           if (query.tenantId && business.tenantId !== query.tenantId) return false;
           if (query.businessId && business.businessId !== query.businessId) return false;
           if (query.phoneNumber) {
-            return normalizePhoneNumber(business.phoneNumber) === normalizePhoneNumber(query.phoneNumber);
+            const normalizedQueryPhone = normalizePhoneNumber(query.phoneNumber);
+            const businessPhoneMatches =
+              normalizePhoneNumber(business.phoneNumber) === normalizedQueryPhone;
+            const locationPhoneMatches = locations.some(
+              location =>
+                location.tenantId === business.tenantId &&
+                location.businessId === business.businessId &&
+                location.phoneNumber &&
+                normalizePhoneNumber(location.phoneNumber) === normalizedQueryPhone
+            );
+
+            return businessPhoneMatches || locationPhoneMatches;
           }
           return true;
         }) ?? null
@@ -58,16 +69,6 @@ export function createMemoryVoiceConfigRepository(input?: {
         );
       }
 
-      if (query.phoneNumber) {
-        const byPhone = scopedLocations.find(
-          location =>
-            location.phoneNumber &&
-            normalizePhoneNumber(location.phoneNumber) ===
-              normalizePhoneNumber(query.phoneNumber!)
-        );
-        if (byPhone) return byPhone;
-      }
-
       if (query.zipCode) {
         const byZipCode = scopedLocations.find(location =>
           location.zipCodes?.includes(query.zipCode!)
@@ -81,6 +82,16 @@ export function createMemoryVoiceConfigRepository(input?: {
           location.cities?.some(city => normalizeText(city) === normalizedCity)
         );
         if (byCity) return byCity;
+      }
+
+      if (query.phoneNumber) {
+        const byPhone = scopedLocations.find(
+          location =>
+            location.phoneNumber &&
+            normalizePhoneNumber(location.phoneNumber) ===
+              normalizePhoneNumber(query.phoneNumber!)
+        );
+        if (byPhone) return byPhone;
       }
 
       const fallbackLocationId =
