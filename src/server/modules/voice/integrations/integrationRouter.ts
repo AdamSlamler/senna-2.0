@@ -21,10 +21,10 @@ export async function routeIntegrationRequest(input: {
   request: IntegrationRequest;
 }): Promise<IntegrationResult> {
   const adapter = input.registry.find({
-    provider: input.provider,
-    category: input.category,
-    vertical: input.vertical,
     capability: input.request.capability,
+    ...(input.provider ? { provider: input.provider } : {}),
+    ...(input.category ? { category: input.category } : {}),
+    ...(input.vertical ? { vertical: input.vertical } : {}),
   });
 
   if (!adapter) {
