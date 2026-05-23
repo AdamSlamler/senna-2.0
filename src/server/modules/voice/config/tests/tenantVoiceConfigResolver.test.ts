@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { VoiceConfigError, resolveVoiceRuntimeConfig } from '../tenantVoiceConfigResolver.js';
+import { resolveVoiceRuntimeConfig } from '../tenantVoiceConfigResolver.js';
 import type {
   BusinessVoiceRecord,
   LocationVoiceRecord,
@@ -163,7 +163,7 @@ describe('resolveVoiceRuntimeConfig', () => {
           businesses: [business],
         }),
       })
-    ).rejects.toMatchObject<Partial<VoiceConfigError>>({
+    ).rejects.toMatchObject({
       code: 'BUSINESS_NOT_FOUND',
     });
   });
